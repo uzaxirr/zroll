@@ -360,8 +360,8 @@ export default function HistoryPage() {
                     disabled={loading}
                     className="text-xs text-secondary hover:text-primary flex items-center gap-1 border border-card-border rounded-btn px-3 py-1.5 hover:bg-gray-50 transition-colors disabled:opacity-50"
                   >
-                    <RefreshCw className="w-3 h-3" />
-                    Refresh
+                    {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <RefreshCw className="w-3 h-3" />}
+                    {loading ? "Syncing..." : "Refresh"}
                   </button>
                 </div>
               </div>

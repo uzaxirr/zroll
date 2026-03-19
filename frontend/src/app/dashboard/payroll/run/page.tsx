@@ -6,6 +6,7 @@ import { StatCard } from "@/components/stat-card";
 import { PageHeader } from "@/components/page-header";
 import { useApi, useApiPost } from "@/lib/use-api";
 import type { PayrollPrepare, PayrollExecuteBody, PayrollZodlResponse } from "@/lib/api";
+import { Loader2 } from "lucide-react";
 
 export default function RunPayrollPage() {
   const router = useRouter();
@@ -22,7 +23,39 @@ export default function RunPayrollPage() {
   }, [data]);
 
   if (loading || !data) {
-    return <div className="flex items-center justify-center h-64"><p className="text-secondary text-sm">Loading payroll data...</p></div>;
+    return (
+      <div className="space-y-section-gap animate-pulse">
+        <div>
+          <div className="h-7 w-32 bg-gray-200 rounded" />
+          <div className="h-4 w-48 bg-gray-100 rounded mt-2" />
+        </div>
+        <div className="grid grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white border border-card-border rounded-card p-5">
+              <div className="h-3 w-20 bg-gray-100 rounded" />
+              <div className="h-7 w-24 bg-gray-200 rounded mt-2" />
+              <div className="h-3 w-16 bg-gray-100 rounded mt-2" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-white border border-card-border rounded-card p-6 space-y-4">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="flex items-center gap-6">
+              <div className="w-4 h-4 bg-gray-100 rounded" />
+              <div className="h-4 w-28 bg-gray-200 rounded" />
+              <div className="h-4 w-20 bg-gray-100 rounded" />
+              <div className="h-4 w-20 bg-gray-100 rounded" />
+              <div className="h-4 w-16 bg-gray-100 rounded" />
+              <div className="h-4 w-24 bg-gray-100 rounded" />
+            </div>
+          ))}
+        </div>
+        <div className="flex justify-end gap-3">
+          <div className="h-12 w-40 bg-gray-100 rounded-btn" />
+          <div className="h-12 w-44 bg-gray-200 rounded-btn" />
+        </div>
+      </div>
+    );
   }
 
   const departments = ["All", ...Array.from(new Set(data.contributors.map((c) => c.department)))];
@@ -153,15 +186,17 @@ export default function RunPayrollPage() {
         <button
           onClick={handleSend}
           disabled={selected.size === 0 || sending || sendingZodl}
-          className="border border-card-border text-primary font-medium px-8 py-3 rounded-btn hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="border border-card-border text-primary font-medium px-8 py-3 rounded-btn hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
         >
+          {sending && <Loader2 className="w-4 h-4 animate-spin" />}
           {sending ? "Sending..." : "Send from Server"}
         </button>
         <button
           onClick={handleZodl}
           disabled={selected.size === 0 || sending || sendingZodl}
-          className="bg-green text-white font-medium px-8 py-3 rounded-btn hover:bg-green/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          className="bg-green text-white font-medium px-8 py-3 rounded-btn hover:bg-green/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
         >
+          {sendingZodl && <Loader2 className="w-4 h-4 animate-spin" />}
           {sendingZodl ? "Preparing..." : `Sign with Zodl (${selected.size})`}
         </button>
       </div>

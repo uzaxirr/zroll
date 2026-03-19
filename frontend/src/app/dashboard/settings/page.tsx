@@ -7,6 +7,7 @@ import { Modal } from "@/components/modal";
 import { FormInput } from "@/components/form-input";
 import { useApi, useApiPut, useApiPost } from "@/lib/use-api";
 import type { Organization, WalletInfo } from "@/lib/api";
+import { Loader2 } from "lucide-react";
 
 const tabs = ["Organization", "Payroll", "Tax", "Integrations", "Security"];
 
@@ -40,7 +41,28 @@ export default function SettingsPage() {
   const { post: postKey, loading: sharingKey } = useApiPost<Record<string, unknown>, { viewing_key: string }>();
 
   if (orgLoading || walletLoading) {
-    return <div className="flex items-center justify-center h-64"><p className="text-secondary text-sm">Loading settings...</p></div>;
+    return (
+      <div className="space-y-section-gap animate-pulse">
+        <div className="h-7 w-24 bg-gray-200 rounded" />
+        <div className="flex gap-1 border-b border-card-border pb-px">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="h-10 w-24 bg-gray-100 rounded-t" />
+          ))}
+        </div>
+        <div className="max-w-2xl space-y-8">
+          <div className="bg-white border border-card-border rounded-card p-7 space-y-5">
+            <div className="h-5 w-40 bg-gray-200 rounded" />
+            {[...Array(3)].map((_, i) => (
+              <div key={i}>
+                <div className="h-3 w-24 bg-gray-100 rounded mb-2" />
+                <div className="h-10 w-full bg-gray-100 rounded-btn" />
+              </div>
+            ))}
+            <div className="h-10 w-28 bg-gray-200 rounded-btn" />
+          </div>
+        </div>
+      </div>
+    );
   }
 
   const handleSaveOrg = async () => {
@@ -179,8 +201,9 @@ export default function SettingsPage() {
               <button
                 onClick={handleSaveOrg}
                 disabled={savingOrg}
-                className="bg-green text-white text-sm font-medium px-6 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50"
+                className="bg-green text-white text-sm font-medium px-6 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
+                {saveStatus === "saving" && <Loader2 className="w-4 h-4 animate-spin" />}
                 {saveButtonLabel}
               </button>
             </div>
@@ -280,8 +303,9 @@ export default function SettingsPage() {
               <button
                 onClick={handleSaveSchedule}
                 disabled={savingOrg}
-                className="bg-green text-white text-sm font-medium px-6 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50"
+                className="bg-green text-white text-sm font-medium px-6 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50 flex items-center gap-2"
               >
+                {scheduleSaveStatus === "saving" && <Loader2 className="w-4 h-4 animate-spin" />}
                 {scheduleButtonLabel}
               </button>
             </div>
@@ -334,7 +358,8 @@ export default function SettingsPage() {
               <button onClick={() => setShowKeyModal(false)} className="border border-card-border text-primary text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-gray-50 transition-colors">
                 Cancel
               </button>
-              <button onClick={handleShareKey} disabled={sharingKey} className="bg-green text-white text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50">
+              <button onClick={handleShareKey} disabled={sharingKey} className="bg-green text-white text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50 flex items-center gap-2">
+                {sharingKey && <Loader2 className="w-4 h-4 animate-spin" />}
                 {sharingKey ? "Generating..." : "Generate Key"}
               </button>
             </div>

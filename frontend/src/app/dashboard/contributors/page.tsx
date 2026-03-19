@@ -7,7 +7,7 @@ import { Modal } from "@/components/modal";
 import { FormInput } from "@/components/form-input";
 import { useApi, useApiPost, useApiPut, useApiDelete, useAuthenticatedDownload } from "@/lib/use-api";
 import type { ContributorsResponse, Contributor } from "@/lib/api";
-import { Pencil, Send, Upload, Download, AlertCircle, CheckCircle2, Trash2 } from "lucide-react";
+import { Pencil, Send, Upload, Download, AlertCircle, CheckCircle2, Trash2, Loader2 } from "lucide-react";
 
 interface CsvRow {
   full_name: string;
@@ -106,6 +106,7 @@ export default function ContributorsPage() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [selected, setSelected] = useState<Set<string>>(new Set());
   const [bulkDeleting, setBulkDeleting] = useState(false);
+  const [actionError, setActionError] = useState<string | null>(null);
 
   const toggleSelect = (id: string) => {
     setSelected((prev) => {
@@ -129,12 +130,13 @@ export default function ContributorsPage() {
     if (selected.size === 0) return;
     if (!confirm(`Delete ${selected.size} contributor${selected.size > 1 ? "s" : ""}? This cannot be undone.`)) return;
     setBulkDeleting(true);
+    setActionError(null);
     try {
       await Promise.all(Array.from(selected).map((id) => del(`/api/contributors/${id}`)));
       setSelected(new Set());
       refetch();
-    } catch {
-      // partial success is fine, refetch shows current state
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Some contributors could not be deleted.");
       refetch();
     } finally {
       setBulkDeleting(false);
@@ -144,12 +146,13 @@ export default function ContributorsPage() {
   const handleDelete = async (contributorId: string, name: string) => {
     if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
     setDeletingId(contributorId);
+    setActionError(null);
     try {
       await del(`/api/contributors/${contributorId}`);
       setSelected((prev) => { const next = new Set(prev); next.delete(contributorId); return next; });
       refetch();
-    } catch {
-      // will show updated state on next refetch
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : `Failed to delete ${name}.`);
     } finally {
       setDeletingId(null);
     }
@@ -216,11 +219,12 @@ export default function ContributorsPage() {
 
   const handleVerify = async (contributorId: string) => {
     setVerifyingId(contributorId);
+    setActionError(null);
     try {
       await postVerify(`/api/contributors/${contributorId}/verify`, {});
       refetch();
-    } catch {
-      // silently fail - status will update on next refetch
+    } catch (err) {
+      setActionError(err instanceof Error ? err.message : "Failed to send test transaction.");
     } finally {
       setVerifyingId(null);
     }
@@ -318,7 +322,42 @@ export default function ContributorsPage() {
   };
 
   if (loading || !data) {
-    return <div className="flex items-center justify-center h-64"><p className="text-secondary text-sm">Loading contributors...</p></div>;
+    return (
+      <div className="space-y-section-gap animate-pulse">
+        <div className="flex items-center justify-between">
+          <div>
+            <div className="h-7 w-36 bg-gray-200 rounded" />
+            <div className="h-4 w-28 bg-gray-100 rounded mt-2" />
+          </div>
+          <div className="flex gap-3">
+            <div className="h-10 w-28 bg-gray-100 rounded-btn" />
+            <div className="h-10 w-36 bg-gray-200 rounded-btn" />
+          </div>
+        </div>
+        <div className="flex gap-2">
+          {[...Array(4)].map((_, i) => (
+            <div key={i} className="h-8 w-24 bg-gray-100 rounded-badge" />
+          ))}
+        </div>
+        <div className="bg-white border border-card-border rounded-card overflow-hidden">
+          <div className="bg-table-header border-b border-card-border px-6 py-3">
+            <div className="h-3 w-full bg-gray-100 rounded" />
+          </div>
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center gap-6 px-6 py-4 border-b border-row-border last:border-0">
+              <div className="w-8 h-8 rounded-full bg-gray-200" />
+              <div className="flex-1 space-y-2">
+                <div className="h-4 w-32 bg-gray-200 rounded" />
+                <div className="h-3 w-40 bg-gray-100 rounded" />
+              </div>
+              <div className="h-4 w-20 bg-gray-100 rounded" />
+              <div className="h-4 w-24 bg-gray-100 rounded" />
+              <div className="h-5 w-16 bg-gray-100 rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const departments = ["All", ...data.departments.map((d) => d.name)];
@@ -338,7 +377,7 @@ export default function ContributorsPage() {
                 disabled={bulkDeleting}
                 className="flex items-center gap-2 bg-red-500 text-white text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-red-600 transition-colors disabled:opacity-50"
               >
-                <Trash2 className="w-4 h-4" />
+                {bulkDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                 {bulkDeleting ? "Deleting..." : `Delete ${selected.size}`}
               </button>
             )}
@@ -374,6 +413,14 @@ export default function ContributorsPage() {
           </button>
         ))}
       </div>
+
+      {actionError && (
+        <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-card px-5 py-3">
+          <AlertCircle className="w-4 h-4 text-red-500 flex-shrink-0" />
+          <p className="text-sm text-red-700 flex-1">{actionError}</p>
+          <button onClick={() => setActionError(null)} className="text-red-400 hover:text-red-600 text-xs font-medium">Dismiss</button>
+        </div>
+      )}
 
       <div className="bg-white border border-card-border rounded-card overflow-hidden">
         <table className="w-full">
@@ -446,7 +493,7 @@ export default function ContributorsPage() {
                         className="text-green hover:text-green/80 transition-colors disabled:opacity-50"
                         title="Send test transaction"
                       >
-                        <Send className="w-4 h-4" />
+                        {verifyingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                       </button>
                     )}
                     <button
@@ -461,7 +508,7 @@ export default function ContributorsPage() {
                       className="text-muted hover:text-error transition-colors disabled:opacity-50"
                       title="Delete contributor"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      {deletingId === c.id ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
                     </button>
                   </div>
                 </td>
@@ -538,7 +585,8 @@ export default function ContributorsPage() {
             <button onClick={() => setShowAddModal(false)} className="border border-card-border text-primary text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-gray-50 transition-colors">
               Cancel
             </button>
-            <button onClick={handleAdd} disabled={posting} className="bg-green text-white text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50">
+            <button onClick={handleAdd} disabled={posting} className="bg-green text-white text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50 flex items-center gap-2">
+              {posting && <Loader2 className="w-4 h-4 animate-spin" />}
               {posting ? "Adding..." : "Add Contributor"}
             </button>
           </div>
@@ -622,8 +670,9 @@ export default function ContributorsPage() {
                     <button
                       onClick={handleBulkImport}
                       disabled={bulkPosting || csvRows.filter((r) => r._valid).length === 0}
-                      className="bg-green text-white text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50"
+                      className="bg-green text-white text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50 flex items-center gap-2"
                     >
+                      {bulkPosting && <Loader2 className="w-4 h-4 animate-spin" />}
                       {bulkPosting ? "Importing..." : `Import ${csvRows.filter((r) => r._valid).length} Contributors`}
                     </button>
                   </div>
@@ -744,7 +793,8 @@ export default function ContributorsPage() {
             <button onClick={() => setEditingContributor(null)} className="border border-card-border text-primary text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-gray-50 transition-colors">
               Cancel
             </button>
-            <button onClick={handleEdit} disabled={putting} className="bg-green text-white text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50">
+            <button onClick={handleEdit} disabled={putting} className="bg-green text-white text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-green/90 transition-colors disabled:opacity-50 flex items-center gap-2">
+              {putting && <Loader2 className="w-4 h-4 animate-spin" />}
               {putting ? "Saving..." : "Save Changes"}
             </button>
           </div>
