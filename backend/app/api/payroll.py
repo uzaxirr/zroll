@@ -421,6 +421,32 @@ async def payroll_history_export(
     )
 
 
+class ViewFromChainRequest(BaseModel):
+    ufvk: str
+    birthday: int = 3860000
+
+
+@router.post("/view-from-chain")
+async def payroll_view_from_chain(
+    req: ViewFromChainRequest,
+    auth: AuthContext = Depends(require_role("admin")),
+):
+    """Read transactions directly from Zcash chain via UFVK. No data is stored."""
+    import httpx
+    from app.core.config import get_settings
+
+    settings = get_settings()
+    async with httpx.AsyncClient() as client:
+        resp = await client.post(
+            f"{settings.zcash_service_url}/view/transactions",
+            json={"ufvk": req.ufvk, "birthday": req.birthday},
+            timeout=300.0,
+        )
+        if resp.status_code != 200:
+            raise HTTPException(status_code=502, detail=f"Zcash service error: {resp.text}")
+        return resp.json()
+
+
 @router.get("/{run_id}")
 async def payroll_detail(
     run_id: uuid.UUID,
