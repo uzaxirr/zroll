@@ -36,6 +36,10 @@ async def create_wallet(client: httpx.AsyncClient, label: str) -> dict:
     data = resp.json()
     print(f"  Wallet ID: {data['wallet_id']}")
     print(f"  Address:   {data['unified_address']}")
+    if data.get("seed_phrase"):
+        print(f"  Seed:      {data['seed_phrase']}")
+    if data.get("full_viewing_key"):
+        print(f"  UFVK:      {data['full_viewing_key'][:40]}...")
     return data
 
 
@@ -128,7 +132,11 @@ async def setup():
     print(f"\n  Contributors:")
     for name, wallet in contributor_wallets:
         print(f"    {name}:")
-        print(f"      {wallet['unified_address']}")
+        print(f"      Address: {wallet['unified_address']}")
+        if wallet.get("seed_phrase"):
+            print(f"      Seed:    {wallet['seed_phrase']}")
+        if wallet.get("full_viewing_key"):
+            print(f"      UFVK:    {wallet['full_viewing_key'][:60]}...")
     if tx_id:
         print(f"\n  Test transaction: {tx_id}")
     print(f"\n  Use these addresses with the API to add contributors.")

@@ -28,6 +28,8 @@ pub struct WalletResponse {
     pub unified_address: String,
     pub full_viewing_key: String,
     pub incoming_viewing_key: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub seed_phrase: Option<String>,
 }
 
 #[derive(Debug, Serialize)]
@@ -57,6 +59,34 @@ pub struct MemoResponse {
 #[derive(Debug, Serialize)]
 pub struct ViewingKeyResponse {
     pub viewing_key: String,
+}
+
+// --- View-only (UFVK) types ---
+
+#[derive(Debug, Deserialize)]
+pub struct ViewOnlyRequest {
+    pub ufvk: String,
+    #[serde(default = "default_birthday")]
+    pub birthday: u32,
+}
+
+fn default_birthday() -> u32 {
+    3860000
+}
+
+#[derive(Debug, Serialize)]
+pub struct ViewOnlyTransfer {
+    pub tx_id: String,
+    pub block_height: u32,
+    pub amount_zec: f64,
+    pub memo: Option<String>,
+    pub status: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct ViewOnlyResponse {
+    pub balance_zec: f64,
+    pub transactions: Vec<ViewOnlyTransfer>,
 }
 
 #[derive(Debug, Serialize)]

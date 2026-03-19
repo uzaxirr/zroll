@@ -114,17 +114,19 @@ impl WalletManager {
             ));
         }
 
-        // Extract UFVK from the wallet's key store
-        let (full_viewing_key, incoming_viewing_key) = {
+        // Extract UFVK and seed phrase from the wallet
+        let (full_viewing_key, incoming_viewing_key, seed_phrase) = {
             let wallet = client.wallet.read().await;
-            if let Some(key_store) = wallet.unified_key_store.get(&zip32::AccountId::ZERO) {
+            let fvk = if let Some(key_store) = wallet.unified_key_store.get(&zip32::AccountId::ZERO) {
                 let ufvk = UnifiedFullViewingKey::try_from(key_store)
                     .map_err(|e| ServiceError::Internal(format!("Failed to extract UFVK: {e:?}")))?;
                 let encoded = ufvk.encode(&ChainType::Testnet);
                 (encoded.clone(), encoded)
             } else {
                 (String::new(), String::new())
-            }
+            };
+            let phrase = wallet.mnemonic_phrase();
+            (fvk.0, fvk.1, phrase)
         };
 
         // Persist wallet to disk
@@ -161,6 +163,7 @@ impl WalletManager {
             unified_address,
             full_viewing_key,
             incoming_viewing_key,
+            seed_phrase,
         })
     }
 
@@ -512,6 +515,86 @@ impl WalletManager {
         lc.wait_for_save().await;
         log::info!("Rescan complete for wallet {wallet_id}");
         Ok(())
+    }
+
+    /// Read transactions from chain using a UFVK (view-only, no spending key needed).
+    /// Creates a temporary in-memory wallet, syncs, reads transactions, and discards.
+    pub async fn view_transactions_by_ufvk(
+        &self,
+        ufvk: &str,
+        birthday: u32,
+    ) -> Result<ViewOnlyResponse, ServiceError> {
+        use std::num::NonZeroU32;
+        use pepper_sync::config::{PerformanceLevel, SyncConfig, TransparentAddressDiscovery};
+        use zingolib::wallet::{LightWallet, WalletBase, WalletSettings};
+        use zcash_protocol::consensus::BlockHeight;
+
+        let wallet_dir = self.config.wallet_dir.join("_viewonly_tmp");
+        let _ = std::fs::remove_dir_all(&wallet_dir);
+        std::fs::create_dir_all(&wallet_dir)?;
+
+        let zingo_config = self.build_zingo_config(&wallet_dir)?;
+
+        let wallet_settings = WalletSettings {
+            sync_config: SyncConfig {
+                transparent_address_discovery: TransparentAddressDiscovery::minimal(),
+                performance_level: PerformanceLevel::High,
+            },
+            min_confirmations: NonZeroU32::new(1).unwrap(),
+        };
+
+        let wallet = LightWallet::new(
+            ChainType::Testnet,
+            WalletBase::Ufvk(ufvk.to_string()),
+            BlockHeight::from_u32(birthday),
+            wallet_settings,
+        )
+        .map_err(|e| ServiceError::Internal(format!("Invalid UFVK: {e:?}")))?;
+
+        let mut client = LightClient::create_from_wallet(wallet, zingo_config, true)
+            .map_err(|e| ServiceError::Internal(format!("Failed to create view-only client: {e}")))?;
+
+        client
+            .sync_and_await()
+            .await
+            .map_err(|e| ServiceError::Sync(format!("View-only sync failed: {e}")))?;
+
+        // Read balance
+        let balance = client
+            .account_balance(zip32::AccountId::ZERO)
+            .await
+            .map_err(|e| ServiceError::Internal(format!("Balance error: {e}")))?;
+
+        let orchard = balance.total_orchard_balance.map(u64::from).unwrap_or(0);
+        let sapling = balance.total_sapling_balance.map(u64::from).unwrap_or(0);
+        let transparent = balance.total_transparent_balance.map(u64::from).unwrap_or(0);
+        let total = orchard + sapling + transparent;
+        let balance_zec = total as f64 / 100_000_000.0;
+
+        // Read value transfers (includes memos)
+        let mut transactions = Vec::new();
+        if let Ok(transfers) = client.value_transfers(false).await {
+            for t in transfers.iter() {
+                let memo = t.memos.first().and_then(|m| {
+                    if m.is_empty() { None } else { Some(m.clone()) }
+                });
+                transactions.push(ViewOnlyTransfer {
+                    tx_id: t.txid.to_string(),
+                    block_height: u32::from(t.blockheight),
+                    amount_zec: t.value as f64 / 100_000_000.0,
+                    memo,
+                    status: "confirmed".to_string(),
+                });
+            }
+        }
+
+        // Clean up temp wallet
+        let _ = std::fs::remove_dir_all(&wallet_dir);
+
+        Ok(ViewOnlyResponse {
+            balance_zec,
+            transactions,
+        })
     }
 
     /// Get all wallet IDs for background sync.

@@ -7,6 +7,10 @@ edition = "2021"
 name = "derive-ufvk"
 path = "src/bin/derive_ufvk.rs"
 
+[[bin]]
+name = "verify-ufvk"
+path = "src/bin/verify_ufvk.rs"
+
 [dependencies]
 # Web framework
 actix-web = "4"
