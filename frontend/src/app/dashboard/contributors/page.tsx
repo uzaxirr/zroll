@@ -104,12 +104,49 @@ export default function ContributorsPage() {
   const { download } = useAuthenticatedDownload();
   const [verifyingId, setVerifyingId] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<Set<string>>(new Set());
+  const [bulkDeleting, setBulkDeleting] = useState(false);
+
+  const toggleSelect = (id: string) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (!data) return;
+    if (selected.size === data.contributors.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(data.contributors.map((c) => c.id)));
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selected.size === 0) return;
+    if (!confirm(`Delete ${selected.size} contributor${selected.size > 1 ? "s" : ""}? This cannot be undone.`)) return;
+    setBulkDeleting(true);
+    try {
+      await Promise.all(Array.from(selected).map((id) => del(`/api/contributors/${id}`)));
+      setSelected(new Set());
+      refetch();
+    } catch {
+      // partial success is fine, refetch shows current state
+      refetch();
+    } finally {
+      setBulkDeleting(false);
+    }
+  };
 
   const handleDelete = async (contributorId: string, name: string) => {
     if (!confirm(`Delete ${name}? This cannot be undone.`)) return;
     setDeletingId(contributorId);
     try {
       await del(`/api/contributors/${contributorId}`);
+      setSelected((prev) => { const next = new Set(prev); next.delete(contributorId); return next; });
       refetch();
     } catch {
       // will show updated state on next refetch
@@ -295,6 +332,16 @@ export default function ContributorsPage() {
         description={`${data.total} team members`}
         action={
           <div className="flex items-center gap-3">
+            {selected.size > 0 && (
+              <button
+                onClick={handleBulkDelete}
+                disabled={bulkDeleting}
+                className="flex items-center gap-2 bg-red-500 text-white text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-red-600 transition-colors disabled:opacity-50"
+              >
+                <Trash2 className="w-4 h-4" />
+                {bulkDeleting ? "Deleting..." : `Delete ${selected.size}`}
+              </button>
+            )}
             <button
               onClick={openCsvModal}
               className="flex items-center gap-2 border border-card-border text-primary text-sm font-medium px-5 py-2.5 rounded-btn hover:bg-gray-50 transition-colors"
@@ -332,6 +379,14 @@ export default function ContributorsPage() {
         <table className="w-full">
           <thead>
             <tr className="bg-table-header border-b border-card-border">
+              <th className="px-4 py-3 w-10">
+                <input
+                  type="checkbox"
+                  checked={contributors.length > 0 && selected.size === contributors.length}
+                  onChange={toggleSelectAll}
+                  className="rounded border-gray-300"
+                />
+              </th>
               <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">Contributor</th>
               <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">Department</th>
               <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">Payment</th>
@@ -344,7 +399,15 @@ export default function ContributorsPage() {
           </thead>
           <tbody>
             {contributors.map((c) => (
-              <tr key={c.id} className="border-b border-row-border last:border-0 hover:bg-gray-50/50 transition-colors">
+              <tr key={c.id} className={`border-b border-row-border last:border-0 hover:bg-gray-50/50 transition-colors ${selected.has(c.id) ? "bg-green/5" : ""}`}>
+                <td className="px-4 py-4 w-10">
+                  <input
+                    type="checkbox"
+                    checked={selected.has(c.id)}
+                    onChange={() => toggleSelect(c.id)}
+                    className="rounded border-gray-300"
+                  />
+                </td>
                 <td className="px-6 py-4">
                   <div className="flex items-center gap-3">
                     <div className={`w-8 h-8 rounded-full ${departmentColors[c.department] || "bg-gray-400"} flex items-center justify-center`}>

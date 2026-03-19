@@ -58,10 +58,9 @@ async def payroll_execute(
 ):
     price_service = PriceService()
     try:
-        if req.lock_zec_rate:
-            zec_rate = await price_service.get_zec_price()
-        else:
-            zec_rate = Decimal("45.00")
+        zec_rate = await price_service.get_zec_price()
+    except Exception:
+        raise HTTPException(status_code=503, detail="Unable to fetch ZEC price. Try again shortly.")
     finally:
         await price_service.close()
 
@@ -98,10 +97,9 @@ async def payroll_execute_zodl(
 
     price_service = PriceService()
     try:
-        if req.lock_zec_rate:
-            zec_rate = await price_service.get_zec_price()
-        else:
-            zec_rate = Decimal("45.00")
+        zec_rate = await price_service.get_zec_price()
+    except Exception:
+        raise HTTPException(status_code=503, detail="Unable to fetch ZEC price. Try again shortly.")
     finally:
         await price_service.close()
 
@@ -345,13 +343,18 @@ async def payroll_recent(
 async def payroll_history(
     page: int = Query(1, ge=1),
     limit: int = Query(20, ge=1, le=100),
+    status: str = Query("all"),
     auth: AuthContext = Depends(require_role("admin")),
     db: AsyncSession = Depends(get_db),
 ):
     org_id = auth.organization.id
 
+    filters = [PayrollRun.organization_id == org_id]
+    if status != "all":
+        filters.append(PayrollRun.status == PayrollRunStatus(status))
+
     count_result = await db.execute(
-        select(func.count()).where(PayrollRun.organization_id == org_id)
+        select(func.count()).where(*filters)
     )
     total = count_result.scalar()
     total_pages = (total + limit - 1) // limit if total else 1
@@ -359,7 +362,7 @@ async def payroll_history(
     offset = (page - 1) * limit
     result = await db.execute(
         select(PayrollRun)
-        .where(PayrollRun.organization_id == org_id)
+        .where(*filters)
         .order_by(PayrollRun.created_at.desc())
         .offset(offset)
         .limit(limit)

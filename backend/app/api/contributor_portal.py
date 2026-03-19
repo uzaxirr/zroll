@@ -166,7 +166,7 @@ async def contributor_payments(
                 "amount_zec": float(item.zec_amount),
                 "amount_usd": float(item.net_usd),
                 "from": item.payroll_run.organization.name if item.payroll_run.organization else "",
-                "status": "shielded",
+                "status": "shielded" if item.payroll_run.pool == "orchard" else "transparent",
                 "payroll_item_id": str(item.id),
                 "tx_id": item.payroll_run.tx_id,
                 "confirmations": item.payroll_run.confirmations,

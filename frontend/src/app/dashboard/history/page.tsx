@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/badge";
-import { Eye, Loader2, Shield, Lock, RefreshCw, ChevronDown, ChevronRight, Users, ArrowUpDown, ExternalLink, Info, Copy, Check, Play, X } from "lucide-react";
+import { Eye, Loader2, Shield, Lock, RefreshCw, ChevronDown, ChevronRight, Users, ArrowUpDown, ExternalLink, Info, Copy, Check, Play, X, Download } from "lucide-react";
 
 interface PayStub {
   org: string | null;
@@ -158,7 +158,16 @@ export default function HistoryPage() {
   };
 
   const handleSync = async (forceRefresh = false) => {
-    if (!ufvk.trim()) return;
+    const trimmed = ufvk.trim();
+    if (!trimmed) return;
+    if (!trimmed.startsWith("uview") && !trimmed.startsWith("uviewtest")) {
+      setError("Invalid viewing key. Must start with 'uview' (mainnet) or 'uviewtest' (testnet).");
+      return;
+    }
+    if (trimmed.length < 100) {
+      setError("Viewing key appears too short. Please paste the full unified viewing key.");
+      return;
+    }
     setLoading(true);
     setError(null);
     try {
@@ -177,6 +186,31 @@ export default function HistoryPage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleExportCsv = () => {
+    if (!data) return;
+    const rows = [["TX ID", "Block", "Amount ZEC", "Type", "Contributor", "Department", "Period", "Status"]];
+    for (const tx of data.transactions) {
+      rows.push([
+        tx.tx_id,
+        String(tx.block_height),
+        tx.amount_zec.toFixed(8),
+        tx.is_payroll ? "Payroll" : "Transfer",
+        tx.contributor?.name || "",
+        tx.contributor?.department || "",
+        tx.pay_stub?.period || "",
+        tx.status,
+      ]);
+    }
+    const csv = rows.map((r) => r.map((c) => `"${c}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "zroll_transactions.csv";
+    a.click();
+    URL.revokeObjectURL(url);
   };
 
   const payrollTxs = data?.transactions.filter((tx) => tx.is_payroll) || [];
@@ -351,7 +385,16 @@ export default function HistoryPage() {
                   Payroll Transactions ({payrollTxs.length})
                 </h3>
               </div>
-              <Badge variant="green">From Zcash Chain</Badge>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={handleExportCsv}
+                  className="text-xs text-secondary hover:text-primary flex items-center gap-1 border border-card-border rounded-btn px-3 py-1.5 hover:bg-gray-50 transition-colors"
+                >
+                  <Download className="w-3 h-3" />
+                  Export CSV
+                </button>
+                <Badge variant="green">From Zcash Chain</Badge>
+              </div>
             </div>
 
             {payrollTxs.length === 0 ? (

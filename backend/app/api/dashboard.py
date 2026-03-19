@@ -65,7 +65,7 @@ async def get_dashboard_stats(
         "total_payroll_zec": float(total_zec),
         "contributor_count": contributor_count,
         "next_payroll_date": next_payroll_date,
-        "shielded_percentage": 100,
+        "shielded_percentage": 100 if float(total_zec) > 0 else 0,
         "current_zec_rate": float(zec_rate),
         "pending_approval_count": pending_approval_count,
         "schedule_type": org.schedule_type,
