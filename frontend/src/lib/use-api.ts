@@ -1,12 +1,23 @@
 "use client";
 
-import { useAuth } from "@clerk/nextjs";
 import { useCallback, useEffect, useState } from "react";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
+const BYPASS_AUTH = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
+
+const noopGetToken = async (): Promise<string | null> => null;
+
+function useGetToken(): () => Promise<string | null> {
+  if (BYPASS_AUTH) {
+    return noopGetToken;
+  }
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const clerk = require("@clerk/nextjs");
+  return clerk.useAuth().getToken;
+}
 
 export function useApi<T>(path: string, options?: { skip?: boolean }) {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(!options?.skip);
   const [error, setError] = useState<string | null>(null);
@@ -15,7 +26,7 @@ export function useApi<T>(path: string, options?: { skip?: boolean }) {
     try {
       setLoading(true);
       setError(null);
-      const token = await getToken();
+      const token = BYPASS_AUTH ? null : await getToken();
       const res = await fetch(`${API_BASE}${path}`, {
         headers: {
           "Content-Type": "application/json",
@@ -42,14 +53,14 @@ export function useApi<T>(path: string, options?: { skip?: boolean }) {
 }
 
 export function useApiPost<TBody, TResponse>() {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   const [loading, setLoading] = useState(false);
 
   const post = useCallback(
     async (path: string, body: TBody): Promise<TResponse> => {
       setLoading(true);
       try {
-        const token = await getToken();
+        const token = BYPASS_AUTH ? null : await getToken();
         const res = await fetch(`${API_BASE}${path}`, {
           method: "POST",
           headers: {
@@ -71,14 +82,14 @@ export function useApiPost<TBody, TResponse>() {
 }
 
 export function useApiPut<TBody, TResponse>() {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
   const [loading, setLoading] = useState(false);
 
   const put = useCallback(
     async (path: string, body: TBody): Promise<TResponse> => {
       setLoading(true);
       try {
-        const token = await getToken();
+        const token = BYPASS_AUTH ? null : await getToken();
         const res = await fetch(`${API_BASE}${path}`, {
           method: "PUT",
           headers: {
@@ -100,11 +111,11 @@ export function useApiPut<TBody, TResponse>() {
 }
 
 export function useAuthenticatedDownload() {
-  const { getToken } = useAuth();
+  const getToken = useGetToken();
 
   const download = useCallback(
     async (path: string, filename: string, options?: { method?: string; body?: unknown }) => {
-      const token = await getToken();
+      const token = BYPASS_AUTH ? null : await getToken();
       const res = await fetch(`${API_BASE}${path}`, {
         method: options?.method || "GET",
         headers: {
