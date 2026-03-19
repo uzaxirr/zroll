@@ -1,12 +1,16 @@
 import { redirect } from "next/navigation";
-import { auth } from "@clerk/nextjs/server";
 import Link from "next/link";
 import { Shield, Eye, FileText, Zap, Lock } from "lucide-react";
 
+const BYPASS_AUTH = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
+
 export default async function LandingPage() {
-  const { userId } = await auth();
-  if (userId) {
-    redirect("/dashboard");
+  if (!BYPASS_AUTH) {
+    const { auth } = await import("@clerk/nextjs/server");
+    const { userId } = await auth();
+    if (userId) {
+      redirect("/dashboard");
+    }
   }
   return (
     <div className="min-h-screen bg-bg">

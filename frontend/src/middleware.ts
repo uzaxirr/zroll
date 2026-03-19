@@ -1,18 +1,8 @@
-import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
 import { NextResponse } from "next/server";
 
-const BYPASS_AUTH = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
-const isPublicRoute = createRouteMatcher(["/", "/sign-in(.*)", "/sign-up(.*)"]);
-
-export default BYPASS_AUTH
-  ? function middleware() {
-      return NextResponse.next();
-    }
-  : clerkMiddleware(async (auth, request) => {
-      if (!isPublicRoute(request)) {
-        await auth.protect();
-      }
-    });
+export default function middleware() {
+  return NextResponse.next();
+}
 
 export const config = {
   matcher: [

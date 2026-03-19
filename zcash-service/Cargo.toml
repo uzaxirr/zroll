@@ -3,6 +3,10 @@ name = "zcash-service"
 version = "0.2.0"
 edition = "2021"
 
+[[bin]]
+name = "derive-ufvk"
+path = "src/bin/derive_ufvk.rs"
+
 [dependencies]
 # Web framework
 actix-web = "4"
@@ -15,6 +19,7 @@ tokio = { version = "1", features = ["full"] }
 # Pin to a specific tag for reproducible builds if needed:
 #   zingolib = { git = "https://github.com/zingolabs/zingolib", tag = "v2.1.0" }
 zingolib = { git = "https://github.com/zingolabs/zingolib" }
+pepper-sync = { git = "https://github.com/zingolabs/zingolib" }
 http = "1"
 
 # Zcash ecosystem crates (versions must match zingolib's workspace deps)
@@ -23,6 +28,7 @@ zcash_protocol = "0.7"
 zcash_client_backend = "0.21"
 zcash_keys = "0.12"
 zip32 = "0.2"
+bip0039 = "0.14"
 json = "0.12"
 rustls = { version = "0.23", features = ["ring"] }
 
