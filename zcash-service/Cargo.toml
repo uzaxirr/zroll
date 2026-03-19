@@ -1,0 +1,38 @@
+[package]
+name = "zcash-service"
+version = "0.2.0"
+edition = "2021"
+
+[dependencies]
+# Web framework
+actix-web = "4"
+actix-rt = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+tokio = { version = "1", features = ["full"] }
+
+# Zcash wallet (high-level wallet library wrapping zcash_primitives/client_backend)
+# Pin to a specific tag for reproducible builds if needed:
+#   zingolib = { git = "https://github.com/zingolabs/zingolib", tag = "v2.1.0" }
+zingolib = { git = "https://github.com/zingolabs/zingolib" }
+http = "1"
+
+# Zcash ecosystem crates (versions must match zingolib's workspace deps)
+zcash_address = "0.10"
+zcash_protocol = "0.7"
+zcash_client_backend = "0.21"
+zcash_keys = "0.12"
+zip32 = "0.2"
+json = "0.12"
+rustls = { version = "0.23", features = ["ring"] }
+
+# Storage (wallet_id mapping only; balances/keys live in zingolib wallet files)
+# Version must match zingolib's transitive rusqlite dependency
+rusqlite = { version = "0.37", features = ["bundled"] }
+
+# Utilities
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+hex = "0.4"
+log = "0.4"
+env_logger = "0.11"

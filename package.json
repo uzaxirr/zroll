@@ -1,0 +1,17 @@
+{
+  "name": "zroll",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev:infra": "docker compose up -d",
+    "dev:backend": "cd backend && uvicorn app.main:app --reload --port 8001",
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:zcash": "cd zcash-service && cargo run",
+    "dev:worker": "cd backend && celery -A app.workers.celery_app worker --loglevel=info",
+    "dev": "npm run dev:infra && concurrently \"npm:dev:backend\" \"npm:dev:frontend\" \"npm:dev:worker\"",
+    "db:migrate": "cd backend && alembic upgrade head",
+    "db:seed": "cd backend && python -m scripts.seed",
+    "db:reset": "cd backend && alembic downgrade base && alembic upgrade head && python -m scripts.seed",
+    "stop": "docker compose down"
+  }
+}
