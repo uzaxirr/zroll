@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 use std::path::Path;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::Arc;
 
 use chrono::Utc;
@@ -30,6 +31,16 @@ pub struct WalletManager {
     wallets: TokioMutex<HashMap<String, Arc<TokioMutex<LightClient>>>>,
     config: ServiceConfig,
     db: std::sync::Mutex<Connection>,
+    /// When true, background sync should skip its cycle to avoid competing for lightwalletd.
+    pub sync_paused: AtomicBool,
+}
+
+/// RAII guard that resets sync_paused to false when dropped.
+struct SyncPauseGuard<'a>(&'a AtomicBool);
+impl Drop for SyncPauseGuard<'_> {
+    fn drop(&mut self) {
+        self.0.store(false, Ordering::Relaxed);
+    }
 }
 
 impl WalletManager {
@@ -56,6 +67,7 @@ impl WalletManager {
             wallets: TokioMutex::new(HashMap::new()),
             config,
             db: std::sync::Mutex::new(conn),
+            sync_paused: AtomicBool::new(false),
         })
     }
 
@@ -528,6 +540,10 @@ impl WalletManager {
         use pepper_sync::config::{PerformanceLevel, SyncConfig, TransparentAddressDiscovery};
         use zingolib::wallet::{LightWallet, WalletBase, WalletSettings};
         use zcash_protocol::consensus::BlockHeight;
+
+        // Pause background sync while we use lightwalletd
+        self.sync_paused.store(true, Ordering::Relaxed);
+        let _guard = SyncPauseGuard(&self.sync_paused);
 
         let wallet_dir = self.config.wallet_dir.join("_viewonly_tmp");
         let _ = std::fs::remove_dir_all(&wallet_dir);

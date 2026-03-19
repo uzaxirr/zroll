@@ -6,7 +6,7 @@
     "dev:infra": "docker compose up -d",
     "dev:backend": "cd backend && uvicorn app.main:app --reload --port 8001",
     "dev:frontend": "cd frontend && npm run dev",
-    "dev:zcash": "cd zcash-service && cargo run",
+    "dev:zcash": "cd zcash-service && cargo run --bin zcash-service",
     "dev:worker": "cd backend && celery -A app.workers.celery_app worker --loglevel=info",
     "dev": "npm run dev:infra && concurrently \"npm:dev:backend\" \"npm:dev:frontend\" \"npm:dev:worker\"",
     "db:migrate": "cd backend && alembic upgrade head",

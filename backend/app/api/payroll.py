@@ -1,6 +1,8 @@
 import uuid
 import io
 import csv
+import hashlib
+import time as _time
 from datetime import date
 from decimal import Decimal
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -21,6 +23,10 @@ from app.services.memo import encode_pay_stub
 from app.services.zip321 import generate_zip321_uri
 
 router = APIRouter(prefix="/api/payroll", tags=["payroll"])
+
+# In-memory cache for view-from-chain results. Key: sha256(ufvk), Value: (timestamp, data)
+_chain_cache: dict[str, tuple[float, dict]] = {}
+_CHAIN_CACHE_TTL = 300  # 5 minutes
 
 
 class PayrollExecuteRequest(BaseModel):
@@ -426,12 +432,110 @@ class ViewFromChainRequest(BaseModel):
     birthday: int = 3860000
 
 
+def _enrich_transactions(
+    transactions: list[dict],
+    contributors: list,
+    payroll_items: list,
+) -> list[dict]:
+    """Match chain transactions to contributors using memo + payroll item records."""
+    import json
+    from decimal import Decimal
+
+    # Build a lookup: (period_label, zec_amount_rounded) -> contributor info
+    # This matches chain tx amounts to PayrollItem records
+    amount_period_map: dict[tuple[str, str], dict] = {}
+    for item in payroll_items:
+        period = item.payroll_run.period_label if item.payroll_run else ""
+        zec_key = f"{float(item.zec_amount):.8f}"
+        key = (period, zec_key)
+        amount_period_map[key] = {
+            "name": item.contributor.full_name,
+            "department": item.contributor.department,
+        }
+
+    # Also build a simple amount -> contributor map as fallback
+    amount_map: dict[str, dict] = {}
+    for item in payroll_items:
+        zec_key = f"{float(item.zec_amount):.8f}"
+        if zec_key not in amount_map:
+            amount_map[zec_key] = {
+                "name": item.contributor.full_name,
+                "department": item.contributor.department,
+            }
+
+    enriched = []
+    for tx in transactions:
+        tx_enriched = {**tx, "is_payroll": False, "contributor": None, "pay_stub": None}
+        memo = tx.get("memo")
+        if memo:
+            try:
+                stub = json.loads(memo)
+                if stub.get("org") or stub.get("v"):
+                    tx_enriched["is_payroll"] = True
+                    period = stub.get("per", "")
+                    tx_enriched["pay_stub"] = {
+                        "org": stub.get("org"),
+                        "period": period,
+                        "type": stub.get("typ"),
+                        "gross_usd": stub.get("grs"),
+                        "tax_usd": stub.get("tax"),
+                        "net_usd": stub.get("net"),
+                        "zec_rate": stub.get("rat"),
+                        "reference": stub.get("ref", ""),
+                    }
+
+                    # Match contributor by period + exact ZEC amount
+                    zec_key = f"{tx['amount_zec']:.8f}"
+                    match = amount_period_map.get((period, zec_key))
+                    if not match:
+                        # Fallback: match by amount only
+                        match = amount_map.get(zec_key)
+                    if match:
+                        tx_enriched["contributor"] = match
+            except (json.JSONDecodeError, TypeError):
+                pass
+        enriched.append(tx_enriched)
+    return enriched
+
+
+async def _load_payroll_items(db: AsyncSession, org_id) -> list:
+    """Load all payroll items for an org with contributor and run info."""
+    result = await db.execute(
+        select(PayrollItem)
+        .join(PayrollRun)
+        .where(PayrollRun.organization_id == org_id)
+        .options(
+            selectinload(PayrollItem.contributor),
+            selectinload(PayrollItem.payroll_run),
+        )
+    )
+    return result.scalars().all()
+
+
+async def _load_contributors(db: AsyncSession, org_id) -> list:
+    """Load all contributors for an org."""
+    result = await db.execute(
+        select(Contributor).where(Contributor.organization_id == org_id)
+    )
+    return result.scalars().all()
+
+
 @router.post("/view-from-chain")
 async def payroll_view_from_chain(
     req: ViewFromChainRequest,
+    force_refresh: bool = Query(False),
     auth: AuthContext = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
 ):
-    """Read transactions directly from Zcash chain via UFVK. No data is stored."""
+    """Read transactions directly from Zcash chain via UFVK. Enriched with contributor data."""
+    cache_key = hashlib.sha256(req.ufvk.encode()).hexdigest()
+    now = _time.time()
+
+    if not force_refresh and cache_key in _chain_cache:
+        cached_at, cached_data = _chain_cache[cache_key]
+        if now - cached_at < _CHAIN_CACHE_TTL:
+            return {**cached_data, "_cached": True, "_cache_age_s": int(now - cached_at)}
+
     import httpx
     from app.core.config import get_settings
 
@@ -444,7 +548,32 @@ async def payroll_view_from_chain(
         )
         if resp.status_code != 200:
             raise HTTPException(status_code=502, detail=f"Zcash service error: {resp.text}")
-        return resp.json()
+        data = resp.json()
+
+    # Enrich transactions with contributor info from payroll records
+    contributors = await _load_contributors(db, auth.organization.id)
+    payroll_items = await _load_payroll_items(db, auth.organization.id)
+    if data.get("transactions"):
+        data["transactions"] = _enrich_transactions(data["transactions"], contributors, payroll_items)
+
+    # Add contributor summary for the org
+    data["contributors"] = [
+        {
+            "name": c.full_name,
+            "department": c.department,
+            "wallet_masked": decrypt(c.wallet_address)[:8] + "..." if c.wallet_address else None,
+        }
+        for c in contributors
+    ]
+
+    _chain_cache[cache_key] = (now, data)
+
+    # Evict stale entries
+    stale = [k for k, (t, _) in _chain_cache.items() if now - t > _CHAIN_CACHE_TTL]
+    for k in stale:
+        del _chain_cache[k]
+
+    return data
 
 
 @router.get("/{run_id}")

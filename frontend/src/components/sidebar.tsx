@@ -13,7 +13,7 @@ import {
   PieChart,
 } from "lucide-react";
 import { useApi } from "@/lib/use-api";
-import type { DashboardStats } from "@/lib/api";
+import type { DashboardStats, Organization } from "@/lib/api";
 
 const adminItems = [
   { label: "Dashboard", href: "/dashboard", icon: LayoutDashboard, notifyKey: null },
@@ -38,6 +38,10 @@ export function Sidebar({ variant }: SidebarProps) {
   const items = variant === "admin" ? adminItems : contributorItems;
   const { data: stats } = useApi<DashboardStats>(
     "/api/dashboard/stats",
+    { skip: variant !== "admin" }
+  );
+  const { data: org } = useApi<Organization>(
+    "/api/organizations/me",
     { skip: variant !== "admin" }
   );
   const hasPendingPayroll = stats && stats.pending_approval_count > 0;
@@ -85,8 +89,8 @@ export function Sidebar({ variant }: SidebarProps) {
 
       <div className="px-3 pb-6">
         <div className="border-t border-white/10 pt-4 px-3">
-          <p className="text-xs text-muted">Acme Corp</p>
-          <p className="text-xs text-white/60 mt-0.5">admin@acme.com</p>
+          <p className="text-xs text-muted">{org?.name || "Organization"}</p>
+          <p className="text-xs text-white/60 mt-0.5">{org?.country || ""}</p>
         </div>
       </div>
     </aside>

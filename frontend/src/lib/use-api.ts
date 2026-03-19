@@ -110,6 +110,34 @@ export function useApiPut<TBody, TResponse>() {
   return { put, loading };
 }
 
+export function useApiDelete<TResponse>() {
+  const getToken = useGetToken();
+  const [loading, setLoading] = useState(false);
+
+  const del = useCallback(
+    async (path: string): Promise<TResponse> => {
+      setLoading(true);
+      try {
+        const token = BYPASS_AUTH ? null : await getToken();
+        const res = await fetch(`${API_BASE}${path}`, {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            ...(token ? { Authorization: `Bearer ${token}` } : {}),
+          },
+        });
+        if (!res.ok) throw new Error(`${res.status} ${res.statusText}`);
+        return await res.json();
+      } finally {
+        setLoading(false);
+      }
+    },
+    [getToken]
+  );
+
+  return { del, loading };
+}
+
 export function useAuthenticatedDownload() {
   const getToken = useGetToken();
 

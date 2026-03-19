@@ -207,6 +207,117 @@ async def update_contributor(
     return {"status": "updated"}
 
 
+@router.delete("/{contributor_id}")
+async def delete_contributor(
+    contributor_id: uuid.UUID,
+    auth: AuthContext = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    result = await db.execute(
+        select(Contributor).where(
+            Contributor.id == contributor_id,
+            Contributor.organization_id == auth.organization.id,
+        )
+    )
+    contributor = result.scalar_one_or_none()
+    if not contributor:
+        raise HTTPException(status_code=404, detail="Contributor not found")
+
+    await db.delete(contributor)
+    return {"status": "deleted"}
+
+
+class BulkContributorItem(BaseModel):
+    full_name: str
+    email: str
+    department: str
+    monthly_rate_usd: float
+    wallet_address: Optional[str] = None
+    employment_type: str = "employee"
+    tax_jurisdiction: str = "US"
+
+
+class BulkContributorCreate(BaseModel):
+    contributors: list[BulkContributorItem]
+
+
+@router.post("/bulk")
+async def bulk_create_contributors(
+    req: BulkContributorCreate,
+    auth: AuthContext = Depends(require_role("admin")),
+    db: AsyncSession = Depends(get_db),
+):
+    """Bulk import contributors from CSV. Skips duplicates by email."""
+    org_id = auth.organization.id
+
+    # Get existing emails to skip duplicates
+    result = await db.execute(
+        select(Contributor.email).where(Contributor.organization_id == org_id)
+    )
+    existing_emails = {r[0].lower() for r in result}
+
+    created = []
+    skipped = []
+    errors = []
+
+    for item in req.contributors:
+        if item.email.lower() in existing_emails:
+            skipped.append({"email": item.email, "reason": "already exists"})
+            continue
+
+        try:
+            contributor = Contributor(
+                organization_id=org_id,
+                full_name=item.full_name,
+                email=item.email,
+                department=item.department,
+                monthly_rate_usd=Decimal(str(item.monthly_rate_usd)),
+                wallet_address=encrypt(item.wallet_address) if item.wallet_address else None,
+                status=ContributorStatus.pending,
+                employment_type=EmploymentType(item.employment_type),
+                tax_jurisdiction=item.tax_jurisdiction,
+                payment_preference=PaymentPreference.zec,
+            )
+            db.add(contributor)
+            await db.flush()
+            created.append({"id": str(contributor.id), "name": item.full_name, "email": item.email})
+            existing_emails.add(item.email.lower())
+        except Exception as e:
+            errors.append({"email": item.email, "reason": str(e)})
+
+    await db.commit()
+
+    return {
+        "created_count": len(created),
+        "skipped_count": len(skipped),
+        "error_count": len(errors),
+        "created": created,
+        "skipped": skipped,
+        "errors": errors,
+    }
+
+
+@router.get("/csv-template")
+async def csv_template():
+    """Download a CSV template for bulk import."""
+    import io
+    import csv
+    from fastapi.responses import StreamingResponse
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["name", "email", "department", "monthly_rate_usd", "wallet_address", "employment_type", "tax_jurisdiction"])
+    writer.writerow(["Jane Smith", "jane@company.com", "Engineering", "5000", "utest1...", "employee", "US"])
+    writer.writerow(["Bob Jones", "bob@company.com", "Marketing", "4500", "", "contractor", "US"])
+    output.seek(0)
+
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=contributors_template.csv"},
+    )
+
+
 @router.post("/{contributor_id}/verify")
 async def send_test_tx(
     contributor_id: uuid.UUID,

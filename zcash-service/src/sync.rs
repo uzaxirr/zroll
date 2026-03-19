@@ -1,4 +1,5 @@
 use std::sync::Arc;
+use std::sync::atomic::Ordering;
 use std::time::Duration;
 
 use tokio::task::JoinHandle;
@@ -21,6 +22,12 @@ pub fn spawn_background_sync(
         loop {
             tokio::time::sleep(interval).await;
 
+            // Skip this cycle if a view-from-chain request is active
+            if manager.sync_paused.load(Ordering::Relaxed) {
+                log::info!("Background sync skipped (view-from-chain in progress)");
+                continue;
+            }
+
             let wallet_ids = match manager.all_wallet_ids() {
                 Ok(ids) => ids,
                 Err(e) => {
@@ -36,6 +43,11 @@ pub fn spawn_background_sync(
             log::info!("Syncing {} wallet(s)...", wallet_ids.len());
 
             for wallet_id in &wallet_ids {
+                // Check pause flag before each wallet sync too
+                if manager.sync_paused.load(Ordering::Relaxed) {
+                    log::info!("Background sync interrupted (view-from-chain started)");
+                    break;
+                }
                 match manager.sync_wallet(wallet_id).await {
                     Ok(_) => log::debug!("Synced wallet {wallet_id}"),
                     Err(e) => log::warn!("Failed to sync wallet {wallet_id}: {e}"),
