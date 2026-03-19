@@ -70,6 +70,7 @@ async fn main() -> std::io::Result<()> {
             .service(wallet::shield_funds)
             .service(wallet::rescan_wallet)
             .service(wallet::export_viewing_key)
+            .service(wallet::view_transactions)
             .service(transaction::send_transaction)
             .service(transaction::get_transaction)
             .service(transaction::get_memo)

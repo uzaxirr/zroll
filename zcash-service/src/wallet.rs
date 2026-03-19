@@ -58,6 +58,17 @@ pub async fn rescan_wallet(
     }))
 }
 
+#[post("/view/transactions")]
+pub async fn view_transactions(
+    manager: web::Data<WalletManager>,
+    body: web::Json<ViewOnlyRequest>,
+) -> Result<HttpResponse, ServiceError> {
+    let resp = manager
+        .view_transactions_by_ufvk(&body.ufvk, body.birthday)
+        .await?;
+    Ok(HttpResponse::Ok().json(resp))
+}
+
 #[post("/wallet/{id}/viewing-key")]
 pub async fn export_viewing_key(
     manager: web::Data<WalletManager>,
