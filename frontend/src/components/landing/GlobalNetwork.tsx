@@ -222,6 +222,23 @@ export function GlobalNetwork() {
             strokeLinecap="round"
             style={{ animation: "chevronPulse 2s ease-in-out infinite 1.2s" }}
           />
+
+          {/* Traveling dots along arcs */}
+          <circle r="2.5" fill="rgba(245,158,11,0.6)">
+            <animateMotion dur="3s" repeatCount="indefinite" path="M598,198 C470,128 300,155 170,252" />
+          </circle>
+          <circle r="2.5" fill="rgba(245,158,11,0.6)">
+            <animateMotion dur="3.4s" repeatCount="indefinite" path="M682,198 C825,125 1000,148 1192,228" />
+          </circle>
+          <circle r="2.5" fill="rgba(245,158,11,0.6)">
+            <animateMotion dur="2.8s" repeatCount="indefinite" path="M598,218 C435,338 300,405 215,462" />
+          </circle>
+          <circle r="2.5" fill="rgba(245,158,11,0.6)">
+            <animateMotion dur="3.2s" repeatCount="indefinite" path="M682,218 C865,338 1000,408 1172,462" />
+          </circle>
+          <circle r="2.5" fill="rgba(245,158,11,0.6)">
+            <animateMotion dur="3.6s" repeatCount="indefinite" path="M640,232 C635,380 625,470 612,558" />
+          </circle>
         </svg>
 
         {/* "Your Business" card */}

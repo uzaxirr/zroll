@@ -2,7 +2,6 @@
 
 import { useRef } from "react";
 import { motion, useScroll, useTransform } from "framer-motion";
-import { ScrollReveal } from "./ScrollReveal";
 import { SectionLabel } from "./SectionLabel";
 
 const steps = [
@@ -46,17 +45,15 @@ export function HowItWorks() {
     <section id="how-it-works" ref={sectionRef} className="pt-24 pb-20 px-6">
       <div className="max-w-[900px] mx-auto">
         {/* Header */}
-        <ScrollReveal>
-          <div className="flex flex-col items-center gap-4 mb-16">
-            <SectionLabel>How it works</SectionLabel>
-            <h2
-              className="font-headline font-bold text-white text-center"
-              style={{ fontSize: 48, letterSpacing: "-0.03em", lineHeight: "56px" }}
-            >
-              Five steps. One signature.
-            </h2>
-          </div>
-        </ScrollReveal>
+        <div className="flex flex-col items-center gap-4 mb-16">
+          <SectionLabel>How it works</SectionLabel>
+          <h2
+            className="font-headline font-bold text-white text-center"
+            style={{ fontSize: 48, letterSpacing: "-0.03em", lineHeight: "56px" }}
+          >
+            Five steps. One signature.
+          </h2>
+        </div>
 
         {/* Stepper */}
         <div className="relative">

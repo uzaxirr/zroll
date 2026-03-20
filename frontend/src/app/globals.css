@@ -40,3 +40,11 @@ body {
   0%, 100% { opacity: 0.3; }
   50% { opacity: 0.7; }
 }
+
+.card-hover {
+  transition: transform 150ms ease, border-color 150ms ease;
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+  border-color: rgba(255,255,255,0.12);
+}

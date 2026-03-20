@@ -272,7 +272,7 @@ export function MoreThanPayments() {
           {/* Card 1: Fund with ZEC */}
           <ScrollReveal delay={0.1}>
             <div
-              className="rounded-2xl p-8 h-full"
+              className="rounded-2xl p-8 h-full card-hover"
               style={{
                 background: "rgba(255,255,255,0.02)",
                 border: "1px solid rgba(255,255,255,0.06)",
@@ -356,7 +356,7 @@ export function MoreThanPayments() {
           {/* Card 2: Invoices & Tax */}
           <ScrollReveal delay={0.2}>
             <div
-              className="rounded-2xl p-8 h-full flex flex-col"
+              className="rounded-2xl p-8 h-full flex flex-col card-hover"
               style={{
                 background: "rgba(255,255,255,0.02)",
                 border: "1px solid rgba(255,255,255,0.06)",

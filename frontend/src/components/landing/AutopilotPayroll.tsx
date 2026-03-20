@@ -1,6 +1,5 @@
 "use client";
 
-import { ScrollReveal } from "./ScrollReveal";
 import { SectionLabel } from "./SectionLabel";
 
 const scheduleRows = [
@@ -15,29 +14,27 @@ export function AutopilotPayroll() {
     <section className="pt-16 pb-24 px-6">
       <div className="max-w-[1240px] mx-auto">
         {/* Header */}
-        <ScrollReveal>
-          <div className="flex flex-col items-center gap-4 mb-6">
-            <SectionLabel>Autopilot</SectionLabel>
-            <h2
-              className="font-headline font-bold text-white text-center"
-              style={{ fontSize: 44, letterSpacing: "-0.03em", lineHeight: "52px" }}
-            >
-              Set a schedule.{"\n"}We handle the rest.
-            </h2>
-            <p
-              className="text-center max-w-[520px]"
-              style={{ fontSize: 16, lineHeight: "28px", color: "rgba(255,255,255,0.45)" }}
-            >
-              Configure once. Every pay cycle, you get notified. Preview,
-              approve, done.
-            </p>
-          </div>
-        </ScrollReveal>
+        <div className="flex flex-col items-center gap-4 mb-6">
+          <SectionLabel>Autopilot</SectionLabel>
+          <h2
+            className="font-headline font-bold text-white text-center"
+            style={{ fontSize: 44, letterSpacing: "-0.03em", lineHeight: "52px" }}
+          >
+            Set a schedule.{"\n"}We handle the rest.
+          </h2>
+          <p
+            className="text-center max-w-[520px]"
+            style={{ fontSize: 16, lineHeight: "28px", color: "rgba(255,255,255,0.45)" }}
+          >
+            Configure once. Every pay cycle, you get notified. Preview,
+            approve, done.
+          </p>
+        </div>
 
         {/* Two-column cards */}
         <div className="flex gap-5 mt-12" style={{ maxWidth: 1240, margin: "48px auto 0" }}>
           {/* Left: Payout Schedule */}
-          <ScrollReveal direction="left" className="flex-1">
+          <div className="flex-1">
             <div
               className="rounded-2xl p-7 h-[360px]"
               style={{
@@ -106,10 +103,10 @@ export function AutopilotPayroll() {
                 Bi-weekly cycle · 24 contributors
               </p>
             </div>
-          </ScrollReveal>
+          </div>
 
           {/* Right: Notification + description */}
-          <ScrollReveal direction="right" className="flex-1">
+          <div className="flex-1">
             <div className="flex flex-col gap-5">
               {/* Notification card */}
               <div
@@ -184,7 +181,7 @@ export function AutopilotPayroll() {
                 </p>
               </div>
             </div>
-          </ScrollReveal>
+          </div>
         </div>
       </div>
     </section>
