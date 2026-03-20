@@ -22,7 +22,7 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[s.frontend_url, "http://localhost:3000"],
+    allow_origins=[s.frontend_url, "http://localhost:3000", "https://zwage.xyz"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
