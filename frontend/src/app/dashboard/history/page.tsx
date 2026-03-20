@@ -208,7 +208,7 @@ export default function HistoryPage() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "zroll_transactions.csv";
+    a.download = "zwage_transactions.csv";
     a.click();
     URL.revokeObjectURL(url);
   };

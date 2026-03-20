@@ -2,6 +2,7 @@
 
 import { SignUp } from "@clerk/nextjs";
 import { Shield, FileText, Eye } from "lucide-react";
+import { WalletLogo } from "@/components/WalletLogo";
 
 export default function SignUpPage() {
   return (
@@ -9,25 +10,32 @@ export default function SignUpPage() {
       {/* Left Panel */}
       <div className="w-[480px] bg-sidebar-dark flex flex-col justify-center px-14 py-12">
         <div className="flex items-center gap-2.5 mb-12">
-          <div className="w-8 h-8 rounded-full bg-green flex items-center justify-center">
-            <span className="text-white font-headline font-bold text-sm">Z</span>
-          </div>
-          <span className="text-white font-headline font-bold text-lg">zroll</span>
+          <WalletLogo size={32} />
+          <span
+            className="text-white text-lg"
+            style={{
+              fontFamily: "'Inter', system-ui, sans-serif",
+              fontWeight: 500,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            zwage
+          </span>
         </div>
 
         <h2 className="text-3xl font-headline font-bold text-white tracking-tight leading-tight">
-          Privacy-first payroll
-          <br />for your team
+          Payroll that stays between
+          <br />you and your team.
         </h2>
         <p className="text-gray-400 text-sm mt-4 leading-relaxed">
-          Run payroll on Zcash. Shielded payments with on-chain pay stubs.
+          Shielded payroll, portfolio tracking, and tax reporting. Built on Zcash privacy technology.
         </p>
 
         <div className="mt-10 space-y-5">
           {[
-            { icon: Shield, text: "Every payment is fully shielded" },
-            { icon: FileText, text: "Pay stubs encoded in Zcash memos" },
-            { icon: Eye, text: "Selective disclosure for compliance" },
+            { icon: Shield, text: "Shielded transactions via Zcash Orchard pool" },
+            { icon: FileText, text: "Automated tax reporting with FIFO cost basis" },
+            { icon: Eye, text: "Selective disclosure with viewing keys" },
           ].map((item) => (
             <div key={item.text} className="flex items-center gap-3">
               <item.icon className="w-4 h-4 text-green flex-shrink-0" />

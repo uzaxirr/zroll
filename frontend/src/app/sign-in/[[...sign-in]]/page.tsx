@@ -1,6 +1,7 @@
 "use client";
 
 import { SignIn } from "@clerk/nextjs";
+import { WalletLogo } from "@/components/WalletLogo";
 
 export default function SignInPage() {
   return (
@@ -8,10 +9,17 @@ export default function SignInPage() {
       {/* Left Panel */}
       <div className="w-[480px] bg-sidebar-dark flex flex-col justify-center px-14 py-12">
         <div className="flex items-center gap-2.5 mb-12">
-          <div className="w-8 h-8 rounded-full bg-green flex items-center justify-center">
-            <span className="text-white font-headline font-bold text-sm">Z</span>
-          </div>
-          <span className="text-white font-headline font-bold text-lg">zroll</span>
+          <WalletLogo size={32} />
+          <span
+            className="text-white text-lg"
+            style={{
+              fontFamily: "'Inter', system-ui, sans-serif",
+              fontWeight: 500,
+              letterSpacing: "-0.02em",
+            }}
+          >
+            zwage
+          </span>
         </div>
 
         <h2 className="text-3xl font-headline font-bold text-white tracking-tight leading-tight">

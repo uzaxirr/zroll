@@ -21,8 +21,8 @@ export default function PayrollSuccessPage() {
         <div className="w-16 h-16 bg-badge-green-bg rounded-full flex items-center justify-center mx-auto mb-5">
           <CheckCircle className="w-8 h-8 text-green" />
         </div>
-        <h1 className="text-2xl font-headline font-bold tracking-tight">Payroll Sent</h1>
-        <p className="text-sm text-secondary mt-2">{run.period_label} payroll completed successfully</p>
+        <h1 className="text-2xl font-headline font-bold tracking-tight">Payroll Sent Successfully</h1>
+        <p className="text-sm text-secondary mt-2">{run.period_label} payroll has been processed via shielded transactions.</p>
       </div>
 
       <div className="grid grid-cols-3 gap-4 mb-8">
@@ -75,11 +75,11 @@ export default function PayrollSuccessPage() {
       </div>
 
       <div className="flex items-center justify-center gap-4 mt-10">
-        <Link href="/dashboard" className="border border-card-border text-primary font-medium px-6 py-2.5 rounded-btn hover:bg-white transition-colors text-sm">
-          Back to Dashboard
+        <Link href="/dashboard/history" className="border border-card-border text-primary font-medium px-6 py-2.5 rounded-btn hover:bg-white transition-colors text-sm">
+          View Details
         </Link>
-        <Link href="/dashboard/history" className="bg-green text-white font-medium px-6 py-2.5 rounded-btn hover:bg-green/90 transition-colors text-sm">
-          View History
+        <Link href="/dashboard" className="bg-green text-white font-medium px-6 py-2.5 rounded-btn hover:bg-green/90 transition-colors text-sm">
+          Back to Dashboard
         </Link>
       </div>
     </div>

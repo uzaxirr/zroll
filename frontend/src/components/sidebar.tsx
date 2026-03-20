@@ -8,10 +8,11 @@ import {
   Send,
   Clock,
   Briefcase,
-  FileText,
-  Wallet,
-  PieChart,
+  DollarSign,
+  Monitor,
+  Lock,
 } from "lucide-react";
+import { WalletLogo } from "@/components/WalletLogo";
 import { useApi } from "@/lib/use-api";
 import type { DashboardStats, Organization } from "@/lib/api";
 
@@ -24,9 +25,9 @@ const adminItems = [
 ];
 
 const contributorItems = [
-  { label: "My Payments", href: "/portal", icon: Wallet, notifyKey: null },
-  { label: "Portfolio", href: "/portal/portfolio", icon: PieChart, notifyKey: null },
-  { label: "Tax Summary", href: "/portal/tax", icon: FileText, notifyKey: null },
+  { label: "My Payments", href: "/portal", icon: DollarSign, notifyKey: null },
+  { label: "Tax Summary", href: "/portal/tax", icon: Monitor, notifyKey: null },
+  { label: "Viewing Keys", href: "/portal/viewing-keys", icon: Lock, notifyKey: null },
 ];
 
 interface SidebarProps {
@@ -49,11 +50,16 @@ export function Sidebar({ variant }: SidebarProps) {
   return (
     <aside className="fixed left-0 top-0 h-screen w-[220px] bg-sidebar-dark flex flex-col z-50">
       <div className="flex items-center gap-2.5 px-5 py-6">
-        <div className="w-8 h-8 rounded-full bg-green flex items-center justify-center">
-          <span className="text-white font-headline font-bold text-sm">Z</span>
-        </div>
-        <span className="text-white font-headline font-bold text-lg tracking-tight">
-          zroll
+        <WalletLogo size={32} />
+        <span
+          className="text-white text-lg"
+          style={{
+            fontFamily: "'Inter', system-ui, sans-serif",
+            fontWeight: 500,
+            letterSpacing: "-0.02em",
+          }}
+        >
+          zwage
         </span>
       </div>
 

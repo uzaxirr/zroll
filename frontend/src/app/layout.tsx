@@ -3,7 +3,7 @@ import { AuthProvider } from "@/components/auth-provider";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Zroll - Privacy-First Crypto Payroll",
+  title: "Zwage - Privacy-First Crypto Payroll",
   description: "Payroll that stays between you and your team. Built on Zcash.",
 };
 
