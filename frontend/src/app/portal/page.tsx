@@ -4,9 +4,10 @@ import { useState } from "react";
 import { StatCard } from "@/components/stat-card";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/badge";
+import { EmptyState } from "@/components/empty-state";
 import { useApi } from "@/lib/use-api";
 import type { ContributorStats, ContributorPaymentsResponse, ContributorPayment, PayStub, ContributorViewingKey } from "@/lib/api";
-import { X, CheckCircle, Clock, AlertTriangle, Eye, Copy, Check } from "lucide-react";
+import { X, CheckCircle, Clock, AlertTriangle, Eye, Copy, Check, Wallet } from "lucide-react";
 
 interface TxStatus {
   tx_id: string;
@@ -51,7 +52,30 @@ export default function PortalPage() {
   );
 
   if (statsLoading || paymentsLoading || !stats || !paymentsData) {
-    return <div className="flex items-center justify-center h-64"><p className="text-secondary text-sm">Loading payments...</p></div>;
+    return (
+      <div className="space-y-section-gap animate-pulse">
+        <div className="h-7 w-48 bg-gray-200 rounded" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+          {[...Array(3)].map((_, i) => (
+            <div key={i} className="bg-white border border-card-border rounded-card p-6">
+              <div className="h-4 w-24 bg-gray-100 rounded" />
+              <div className="h-7 w-28 bg-gray-200 rounded mt-3" />
+              <div className="h-3 w-20 bg-gray-100 rounded mt-2" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-white border border-card-border rounded-card p-6 space-y-4">
+          {[...Array(5)].map((_, i) => (
+            <div key={i} className="flex items-center justify-between">
+              <div className="h-4 w-32 bg-gray-100 rounded" />
+              <div className="h-4 w-20 bg-gray-100 rounded" />
+              <div className="h-4 w-24 bg-gray-100 rounded" />
+              <div className="h-5 w-16 bg-gray-100 rounded-full" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   }
 
   const payments = paymentsData.payments;
@@ -103,7 +127,7 @@ export default function PortalPage() {
         </div>
       )}
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           label="Total Received"
           value={`${stats.total_received_zec} ZEC`}
@@ -164,54 +188,64 @@ export default function PortalPage() {
       <div className="flex gap-6">
         <div className={`${selectedStub ? "flex-1" : "w-full"} transition-all`}>
           <h2 className="text-lg font-headline font-bold tracking-tight mb-4">Payment History</h2>
-          <div className="bg-white border border-card-border rounded-card overflow-hidden">
-            <table className="w-full">
-              <thead>
-                <tr className="bg-table-header border-b border-card-border">
-                  <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">Date</th>
-                  <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">From</th>
-                  <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">Amount</th>
-                  <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">Status</th>
-                  <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">On-Chain</th>
-                  <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">Reference</th>
-                </tr>
-              </thead>
-              <tbody>
-                {payments.map((p: ContributorPayment) => (
-                  <tr key={p.payroll_item_id} className="border-b border-row-border last:border-0 hover:bg-gray-50/50 transition-colors">
-                    <td className="px-6 py-4 text-sm font-tabular">{p.date}</td>
-                    <td className="px-6 py-4 text-sm text-secondary">{p.from}</td>
-                    <td className="px-6 py-4">
-                      <div>
-                        <span className="text-sm font-medium font-tabular">{p.amount_zec} ZEC</span>
-                        <span className="text-xs text-muted ml-1.5">${p.amount_usd.toLocaleString()}</span>
-                      </div>
-                      {p.memo && (
-                        <div className="text-xs text-muted mt-1">
-                          Gross ${p.memo.gross.toLocaleString()} · Tax ${Math.abs(p.memo.tax).toLocaleString()} · Rate ${p.memo.rate}/ZEC
-                        </div>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      <Badge variant="green">{p.status}</Badge>
-                    </td>
-                    <td className="px-6 py-4">
-                      {p.tx_id ? (
-                        <TxConfirmation txId={p.tx_id} />
-                      ) : (
-                        <span className="text-xs text-muted">Pending</span>
-                      )}
-                    </td>
-                    <td className="px-6 py-4">
-                      {p.memo && (
-                        <span className="text-xs text-muted font-mono">{p.memo.ref}</span>
-                      )}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          {payments.length === 0 ? (
+            <EmptyState
+              icon={Wallet}
+              title="No payments received yet"
+              description="Once your organization runs payroll, your payments will appear here."
+            />
+          ) : (
+            <div className="overflow-x-auto">
+              <div className="bg-white border border-card-border rounded-card overflow-hidden">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-table-header border-b border-card-border">
+                      <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">Date</th>
+                      <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">From</th>
+                      <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">Amount</th>
+                      <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">Status</th>
+                      <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">On-Chain</th>
+                      <th className="text-left text-xs font-medium text-secondary uppercase tracking-wider px-6 py-3">Reference</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {payments.map((p: ContributorPayment) => (
+                      <tr key={p.payroll_item_id} className="border-b border-row-border last:border-0 hover:bg-gray-50/50 transition-colors">
+                        <td className="px-6 py-4 text-sm font-tabular">{p.date}</td>
+                        <td className="px-6 py-4 text-sm text-secondary">{p.from}</td>
+                        <td className="px-6 py-4">
+                          <div>
+                            <span className="text-sm font-medium font-tabular">{p.amount_zec} ZEC</span>
+                            <span className="text-xs text-muted ml-1.5">${p.amount_usd.toLocaleString()}</span>
+                          </div>
+                          {p.memo && (
+                            <div className="text-xs text-muted mt-1">
+                              Gross ${p.memo.gross.toLocaleString()} · Tax ${Math.abs(p.memo.tax).toLocaleString()} · Rate ${p.memo.rate}/ZEC
+                            </div>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          <Badge variant="green">{p.status}</Badge>
+                        </td>
+                        <td className="px-6 py-4">
+                          {p.tx_id ? (
+                            <TxConfirmation txId={p.tx_id} />
+                          ) : (
+                            <span className="text-xs text-muted">Pending</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4">
+                          {p.memo && (
+                            <span className="text-xs text-muted font-mono">{p.memo.ref}</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
         </div>
 
         {selectedStub && stub && (

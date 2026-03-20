@@ -1,19 +1,13 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "@/lib/auth-context";
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8001";
-const BYPASS_AUTH = process.env.NEXT_PUBLIC_BYPASS_AUTH === "true";
-
-const noopGetToken = async (): Promise<string | null> => null;
 
 function useGetToken(): () => Promise<string | null> {
-  if (BYPASS_AUTH) {
-    return noopGetToken;
-  }
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const clerk = require("@clerk/nextjs");
-  return clerk.useAuth().getToken;
+  const { token } = useAuth();
+  return useCallback(async () => token, [token]);
 }
 
 export function useApi<T>(path: string, options?: { skip?: boolean }) {
@@ -26,7 +20,7 @@ export function useApi<T>(path: string, options?: { skip?: boolean }) {
     try {
       setLoading(true);
       setError(null);
-      const token = BYPASS_AUTH ? null : await getToken();
+      const token = await getToken();
       const res = await fetch(`${API_BASE}${path}`, {
         headers: {
           "Content-Type": "application/json",
@@ -60,7 +54,7 @@ export function useApiPost<TBody, TResponse>() {
     async (path: string, body: TBody): Promise<TResponse> => {
       setLoading(true);
       try {
-        const token = BYPASS_AUTH ? null : await getToken();
+        const token = await getToken();
         const res = await fetch(`${API_BASE}${path}`, {
           method: "POST",
           headers: {
@@ -89,7 +83,7 @@ export function useApiPut<TBody, TResponse>() {
     async (path: string, body: TBody): Promise<TResponse> => {
       setLoading(true);
       try {
-        const token = BYPASS_AUTH ? null : await getToken();
+        const token = await getToken();
         const res = await fetch(`${API_BASE}${path}`, {
           method: "PUT",
           headers: {
@@ -118,7 +112,7 @@ export function useApiDelete<TResponse>() {
     async (path: string): Promise<TResponse> => {
       setLoading(true);
       try {
-        const token = BYPASS_AUTH ? null : await getToken();
+        const token = await getToken();
         const res = await fetch(`${API_BASE}${path}`, {
           method: "DELETE",
           headers: {
@@ -143,7 +137,7 @@ export function useAuthenticatedDownload() {
 
   const download = useCallback(
     async (path: string, filename: string, options?: { method?: string; body?: unknown }) => {
-      const token = BYPASS_AUTH ? null : await getToken();
+      const token = await getToken();
       const res = await fetch(`${API_BASE}${path}`, {
         method: options?.method || "GET",
         headers: {

@@ -7,7 +7,8 @@ import { Modal } from "@/components/modal";
 import { FormInput } from "@/components/form-input";
 import { useApi, useApiPut, useApiPost } from "@/lib/use-api";
 import type { Organization, WalletInfo } from "@/lib/api";
-import { Loader2 } from "lucide-react";
+import { Loader2, DollarSign, Monitor, Shield } from "lucide-react";
+import { toast } from "sonner";
 
 const tabs = ["Organization", "Payroll", "Tax", "Integrations", "Security"];
 
@@ -21,14 +22,14 @@ export default function SettingsPage() {
   const [orgTaxId, setOrgTaxId] = useState<string | null>(null);
   const [orgCountry, setOrgCountry] = useState<string | null>(null);
   const [orgCurrency, setOrgCurrency] = useState<string | null>(null);
-  const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [saveStatus, setSaveStatus] = useState<"idle" | "saving">("idle");
 
   const { put, loading: savingOrg } = useApiPut<Record<string, string>, Organization>();
 
   // Schedule form state
   const [scheduleType, setScheduleType] = useState<string | null>(null);
   const [payDay, setPayDay] = useState<string | null>(null);
-  const [scheduleSaveStatus, setScheduleSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const [scheduleSaveStatus, setScheduleSaveStatus] = useState<"idle" | "saving">("idle");
 
   // Viewing key modal state
   const [showKeyModal, setShowKeyModal] = useState(false);
@@ -75,15 +76,16 @@ export default function SettingsPage() {
       if (orgCountry !== null) body.country = orgCountry;
       if (orgCurrency !== null) body.default_currency = orgCurrency;
       if (Object.keys(body).length === 0) {
-        setSaveStatus("saved");
-        setTimeout(() => setSaveStatus("idle"), 2000);
+        setSaveStatus("idle");
+        toast.success("Organization saved");
         return;
       }
       await put("/api/organizations/me", body);
-      setSaveStatus("saved");
-      setTimeout(() => setSaveStatus("idle"), 2000);
+      setSaveStatus("idle");
+      toast.success("Organization saved");
     } catch {
       setSaveStatus("idle");
+      toast.error("Failed to save organization");
     }
   };
 
@@ -101,7 +103,9 @@ export default function SettingsPage() {
       });
       setGeneratedKey(result.viewing_key);
     } catch (err) {
-      setKeyError(err instanceof Error ? err.message : "Failed to share viewing key.");
+      const msg = err instanceof Error ? err.message : "Failed to share viewing key.";
+      setKeyError(msg);
+      toast.error(msg);
     }
   };
 
@@ -125,15 +129,16 @@ export default function SettingsPage() {
         body.pay_day = Number(payDay ?? org.pay_day ?? 0);
       }
       await put("/api/organizations/me", body as Record<string, string>);
-      setScheduleSaveStatus("saved");
-      setTimeout(() => setScheduleSaveStatus("idle"), 2000);
+      setScheduleSaveStatus("idle");
+      toast.success("Schedule saved");
     } catch {
       setScheduleSaveStatus("idle");
+      toast.error("Failed to save schedule");
     }
   };
 
-  const scheduleButtonLabel = scheduleSaveStatus === "saving" ? "Saving..." : scheduleSaveStatus === "saved" ? "Saved" : "Save Schedule";
-  const saveButtonLabel = saveStatus === "saving" ? "Saving..." : saveStatus === "saved" ? "Saved" : "Save Changes";
+  const scheduleButtonLabel = scheduleSaveStatus === "saving" ? "Saving..." : "Save Schedule";
+  const saveButtonLabel = saveStatus === "saving" ? "Saving..." : "Save Changes";
 
   return (
     <div className="space-y-section-gap">
@@ -166,7 +171,7 @@ export default function SettingsPage() {
                   type="text"
                   value={orgName ?? org.name}
                   onChange={(e) => setOrgName(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-card-border rounded-btn text-sm focus:outline-none focus:border-green transition-colors"
+                  className="w-full px-4 py-2.5 border border-card-border rounded-btn text-sm focus:outline-none focus:border-green focus:ring-2 focus:ring-green/20 transition-colors"
                 />
               </div>
               <div className="grid grid-cols-2 gap-4">
@@ -176,7 +181,7 @@ export default function SettingsPage() {
                     type="text"
                     value={orgTaxId ?? org.tax_id_masked}
                     onChange={(e) => setOrgTaxId(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-card-border rounded-btn text-sm focus:outline-none focus:border-green transition-colors"
+                    className="w-full px-4 py-2.5 border border-card-border rounded-btn text-sm focus:outline-none focus:border-green focus:ring-2 focus:ring-green/20 transition-colors"
                   />
                 </div>
                 <div>
@@ -185,7 +190,7 @@ export default function SettingsPage() {
                     type="text"
                     value={orgCountry ?? org.country}
                     onChange={(e) => setOrgCountry(e.target.value)}
-                    className="w-full px-4 py-2.5 border border-card-border rounded-btn text-sm focus:outline-none focus:border-green transition-colors"
+                    className="w-full px-4 py-2.5 border border-card-border rounded-btn text-sm focus:outline-none focus:border-green focus:ring-2 focus:ring-green/20 transition-colors"
                   />
                 </div>
               </div>
@@ -195,7 +200,7 @@ export default function SettingsPage() {
                   type="text"
                   value={orgCurrency ?? org.default_currency}
                   onChange={(e) => setOrgCurrency(e.target.value)}
-                  className="w-full px-4 py-2.5 border border-card-border rounded-btn text-sm focus:outline-none focus:border-green transition-colors"
+                  className="w-full px-4 py-2.5 border border-card-border rounded-btn text-sm focus:outline-none focus:border-green focus:ring-2 focus:ring-green/20 transition-colors"
                 />
               </div>
               <button
@@ -314,8 +319,49 @@ export default function SettingsPage() {
       )}
 
       {activeTab !== "Organization" && activeTab !== "Payroll" && (
-        <div className="bg-white border border-card-border rounded-card p-12 text-center max-w-2xl">
-          <p className="text-secondary text-sm">{activeTab} settings coming soon.</p>
+        <div className="space-y-4 max-w-2xl">
+          {activeTab === "Tax" && (
+            <div className="bg-white border border-card-border rounded-card p-7">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-green/10 flex items-center justify-center">
+                  <DollarSign className="w-5 h-5 text-green" />
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-base">Tax Automation</h3>
+                  <p className="text-xs text-muted">Planned for Q2 2026</p>
+                </div>
+              </div>
+              <p className="text-sm text-secondary">Automated tax form generation (1099-MISC, W-8BEN), real-time withholding calculations, and year-end reporting.</p>
+            </div>
+          )}
+          {activeTab === "Integrations" && (
+            <div className="bg-white border border-card-border rounded-card p-7">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-blue-500/10 flex items-center justify-center">
+                  <Monitor className="w-5 h-5 text-blue-500" />
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-base">Accounting Integrations</h3>
+                  <p className="text-xs text-muted">Planned for Q3 2026</p>
+                </div>
+              </div>
+              <p className="text-sm text-secondary">Connect QuickBooks, Xero, and other accounting tools for automatic journal entries and reconciliation.</p>
+            </div>
+          )}
+          {activeTab === "Security" && (
+            <div className="bg-white border border-card-border rounded-card p-7">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="w-10 h-10 rounded-lg bg-amber-500/10 flex items-center justify-center">
+                  <Shield className="w-5 h-5 text-amber-500" />
+                </div>
+                <div>
+                  <h3 className="font-headline font-bold text-base">Advanced Security</h3>
+                  <p className="text-xs text-muted">Planned for Q3 2026</p>
+                </div>
+              </div>
+              <p className="text-sm text-secondary">Two-factor authentication, session management, detailed audit logs, and role-based access control.</p>
+            </div>
+          )}
         </div>
       )}
 

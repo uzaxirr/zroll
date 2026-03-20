@@ -7,6 +7,7 @@ import { PageHeader } from "@/components/page-header";
 import { useApi, useApiPost } from "@/lib/use-api";
 import type { PayrollPrepare, PayrollExecuteBody, PayrollZodlResponse } from "@/lib/api";
 import { Loader2 } from "lucide-react";
+import { toast } from "sonner";
 
 export default function RunPayrollPage() {
   const router = useRouter();
@@ -29,7 +30,7 @@ export default function RunPayrollPage() {
           <div className="h-7 w-32 bg-gray-200 rounded" />
           <div className="h-4 w-48 bg-gray-100 rounded mt-2" />
         </div>
-        <div className="grid grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {[...Array(3)].map((_, i) => (
             <div key={i} className="bg-white border border-card-border rounded-card p-5">
               <div className="h-3 w-20 bg-gray-100 rounded" />
@@ -81,48 +82,57 @@ export default function RunPayrollPage() {
   };
 
   const handleSend = async () => {
-    const items = selectedContributors.map((c) => ({
-      contributor_id: c.id,
-      gross_usd: c.monthly_rate_usd,
-      tax_withheld_usd: c.monthly_rate_usd * c.tax_rate,
-    }));
+    try {
+      const items = selectedContributors.map((c) => ({
+        contributor_id: c.id,
+        gross_usd: c.monthly_rate_usd,
+        tax_withheld_usd: c.monthly_rate_usd * c.tax_rate,
+      }));
 
-    const now = new Date();
-    const result = await post("/api/payroll/execute", {
-      period_label: data.period,
-      period_start: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`,
-      period_end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`,
-      items,
-      lock_zec_rate: true,
-    });
+      const now = new Date();
+      const result = await post("/api/payroll/execute", {
+        period_label: data.period,
+        period_start: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`,
+        period_end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`,
+        items,
+        lock_zec_rate: true,
+      });
 
-    router.push(`/dashboard/payroll/${result.payroll_run_id}/success`);
+      toast.success("Payroll sent successfully");
+      router.push(`/dashboard/payroll/${result.payroll_run_id}/success`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to send payroll");
+    }
   };
 
   const handleZodl = async () => {
-    const items = selectedContributors.map((c) => ({
-      contributor_id: c.id,
-      gross_usd: c.monthly_rate_usd,
-      tax_withheld_usd: c.monthly_rate_usd * c.tax_rate,
-    }));
+    try {
+      const items = selectedContributors.map((c) => ({
+        contributor_id: c.id,
+        gross_usd: c.monthly_rate_usd,
+        tax_withheld_usd: c.monthly_rate_usd * c.tax_rate,
+      }));
 
-    const now = new Date();
-    const result = await postZodl("/api/payroll/execute-zodl", {
-      period_label: data.period,
-      period_start: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`,
-      period_end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`,
-      items,
-      lock_zec_rate: true,
-    });
+      const now = new Date();
+      const result = await postZodl("/api/payroll/execute-zodl", {
+        period_label: data.period,
+        period_start: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-01`,
+        period_end: `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}-${new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate()}`,
+        items,
+        lock_zec_rate: true,
+      });
 
-    router.push(`/dashboard/payroll/${result.payroll_run_id}/sign`);
+      router.push(`/dashboard/payroll/${result.payroll_run_id}/sign`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to prepare Zodl signing");
+    }
   };
 
   return (
     <div className="space-y-section-gap">
       <PageHeader title="Run Payroll" description={`Period: ${data.period}`} />
 
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard label="Total This Run" value={`$${totalUsd.toLocaleString()}`} sub={`${totalZec.toFixed(2)} ZEC`} />
         <StatCard label="Recipients" value={selected.size.toString()} sub={`of ${data.contributors.length} contributors`} />
         <StatCard label="Est. Fee" value={`${data.estimated_network_fee} ZEC`} sub={`$${(data.estimated_network_fee * data.zec_rate_usd).toFixed(2)}`} />
@@ -144,6 +154,7 @@ export default function RunPayrollPage() {
         ))}
       </div>
 
+      <div className="overflow-x-auto">
       <div className="bg-white border border-card-border rounded-card overflow-hidden">
         <table className="w-full">
           <thead>
@@ -180,6 +191,7 @@ export default function RunPayrollPage() {
             })}
           </tbody>
         </table>
+      </div>
       </div>
 
       <div className="flex justify-end gap-3">

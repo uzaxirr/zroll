@@ -31,7 +31,6 @@ function ZcashIcon() {
     <svg width="12" height="14" viewBox="0 0 12 14" fill="none">
       <rect x="1" y="0.5" width="10" height="2" rx="0.5" fill="#000000" />
       <polygon points="9.5,2.5 3,11 9.5,11" fill="#000000" />
-      <polygon points="2.5,3 2.5,11.5 9,3" fill="none" stroke="#000000" strokeWidth="0" />
       <rect x="1" y="11.5" width="10" height="2" rx="0.5" fill="#000000" />
     </svg>
   );
@@ -114,7 +113,6 @@ const recipients = [
 export function GlobalNetwork() {
   return (
     <section className="relative w-full overflow-hidden" style={{ height: 680 }}>
-      {/* Container centered at 1440px */}
       <div className="relative max-w-[1440px] mx-auto h-full">
         {/* World map background */}
         <WorldMapSVG />
@@ -272,7 +270,7 @@ export function GlobalNetwork() {
           <WalletLogo size={52} />
         </div>
 
-        {/* Recipient cards - exact pixel positions from Paper */}
+        {/* Recipient cards - exact pixel positions */}
         {recipients.map((r, i) => (
           <ScrollReveal key={r.name} delay={0.1 + i * 0.15}>
             <div
@@ -287,14 +285,10 @@ export function GlobalNetwork() {
                 gap: 10,
               }}
             >
-              {/* Token circle with proper chain icon */}
+              {/* Token circle with chain icon */}
               <div
                 className="flex items-center justify-center rounded-full shrink-0"
-                style={{
-                  width: 32,
-                  height: 32,
-                  background: r.tokenBg,
-                }}
+                style={{ width: 32, height: 32, background: r.tokenBg }}
               >
                 {r.icon}
               </div>

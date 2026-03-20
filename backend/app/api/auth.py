@@ -1,16 +1,18 @@
-import hashlib
-import hmac
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from pydantic import BaseModel
 
 from app.core.config import get_settings
 from app.core.database import get_db
 from app.core.encryption import encrypt
+from app.core.security import hash_password, verify_password, create_access_token, create_refresh_token, decode_token
+from app.core.auth import get_current_user, AuthContext
 from app.models.organization import Organization
 from app.models.user import User, UserRole
 from app.models.wallet import OrgWallet
 from app.services.zcash import ZcashService
+from jose import JWTError
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 settings = get_settings()
@@ -19,80 +21,119 @@ settings = get_settings()
 class SignupRequest(BaseModel):
     name: str
     email: str
+    password: str
     company_name: str
-    clerk_user_id: str
-    clerk_org_id: str
+
+
+class LoginRequest(BaseModel):
+    email: str
+    password: str
+
+
+class RefreshRequest(BaseModel):
+    refresh_token: str
 
 
 @router.post("/signup")
 async def signup(req: SignupRequest, db: AsyncSession = Depends(get_db)):
-    org = Organization(
-        name=req.company_name,
-        clerk_org_id=req.clerk_org_id,
-    )
+    # Check if email already exists
+    result = await db.execute(select(User).where(User.email == req.email))
+    if result.scalar_one_or_none():
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail="Email already registered")
+
+    org = Organization(name=req.company_name)
     db.add(org)
     await db.flush()
 
     user = User(
-        clerk_user_id=req.clerk_user_id,
         email=req.email,
         full_name=req.name,
+        password_hash=hash_password(req.password),
         role=UserRole.admin,
         organization_id=org.id,
     )
     db.add(user)
+    await db.flush()
 
-    # Generate real Zcash testnet wallet via Rust service.
-    # The Rust service manages all key material. We store only the
-    # wallet_id (for API calls), unified_address, and viewing keys.
+    # Capture IDs before commit (commit expires ORM objects)
+    user_id = str(user.id)
+    org_id = str(org.id)
+    role = user.role.value
+
+    await db.commit()
+
+    # Generate Zcash testnet wallet via Rust service (non-blocking)
     zcash = ZcashService()
     try:
         keys = await zcash.generate_wallet()
         wallet = OrgWallet(
-            organization_id=org.id,
+            organization_id=org_id,
             zcash_wallet_id=keys.wallet_id,
             address=encrypt(keys.unified_address),
             viewing_key_full=keys.full_viewing_key,
             viewing_key_incoming=keys.incoming_viewing_key,
         )
         db.add(wallet)
+        await db.commit()
     except Exception:
-        # Wallet generation may fail if Zcash service is down; create org anyway
-        pass
+        await db.rollback()
     finally:
         await zcash.close()
 
-    await db.flush()
-    return {"status": "ok", "organization_id": str(org.id), "user_id": str(user.id)}
+    access_token = create_access_token(user_id, org_id, role)
+    refresh_token = create_refresh_token(user_id)
+
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "user_id": user_id,
+        "org_id": org_id,
+    }
 
 
-@router.post("/webhooks/clerk")
-async def clerk_webhook(request: Request, db: AsyncSession = Depends(get_db)):
-    body = await request.body()
+@router.post("/login")
+async def login(req: LoginRequest, db: AsyncSession = Depends(get_db)):
+    result = await db.execute(select(User).where(User.email == req.email))
+    user = result.scalar_one_or_none()
+    if not user or not user.password_hash or not verify_password(req.password, user.password_hash):
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid email or password")
 
-    # Verify Clerk webhook signature
-    svix_id = request.headers.get("svix-id")
-    svix_timestamp = request.headers.get("svix-timestamp")
-    svix_signature = request.headers.get("svix-signature")
+    access_token = create_access_token(str(user.id), str(user.organization_id), user.role.value)
+    refresh_token = create_refresh_token(str(user.id))
 
-    if not all([svix_id, svix_timestamp, svix_signature]):
-        raise HTTPException(status_code=400, detail="Missing webhook headers")
+    return {"access_token": access_token, "refresh_token": refresh_token}
 
-    payload = await request.json()
-    event_type = payload.get("type")
 
-    if event_type == "user.created":
-        data = payload["data"]
-        email = data.get("email_addresses", [{}])[0].get("email_address", "")
-        name = f"{data.get('first_name', '')} {data.get('last_name', '')}".strip()
+@router.post("/refresh")
+async def refresh(req: RefreshRequest, db: AsyncSession = Depends(get_db)):
+    try:
+        payload = decode_token(req.refresh_token)
+        if payload.get("type") != "refresh":
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token type")
+        user_id = payload.get("sub")
+        if not user_id:
+            raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
+    except JWTError:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired refresh token")
 
-        # Check if user already exists
-        from sqlalchemy import select
-        result = await db.execute(select(User).where(User.clerk_user_id == data["id"]))
-        if result.scalar_one_or_none():
-            return {"status": "already_exists"}
+    result = await db.execute(select(User).where(User.id == user_id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-        # User will be linked to org when they're added as a contributor
-        # or on signup flow
+    access_token = create_access_token(str(user.id), str(user.organization_id), user.role.value)
+    return {"access_token": access_token}
 
-    return {"status": "ok"}
+
+@router.get("/me")
+async def me(auth: AuthContext = Depends(get_current_user)):
+    return {
+        "id": str(auth.user.id),
+        "email": auth.user.email,
+        "name": auth.user.full_name,
+        "role": auth.role,
+        "organization": {
+            "id": str(auth.organization.id),
+            "name": auth.organization.name,
+        },
+    }

@@ -23,8 +23,6 @@ class Organization(Base):
     tax_id: Mapped[str | None] = mapped_column(String(500), nullable=True)  # encrypted
     country: Mapped[str] = mapped_column(String(100), default="US")
     default_currency: Mapped[str] = mapped_column(String(10), default="USD")
-    clerk_org_id: Mapped[str] = mapped_column(String(255), unique=True)
-
     # Payout schedule
     schedule_type: Mapped[str] = mapped_column(String(20), default="none")
     pay_day: Mapped[int | None] = mapped_column(Integer, nullable=True)  # 0-6 for weekly/biweekly, 1-28 for monthly

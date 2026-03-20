@@ -26,8 +26,9 @@ const config: Config = {
         "badge-indigo-bg": "#EEF2FF",
       },
       fontFamily: {
-        headline: ['"Space Grotesk"', "system-ui", "sans-serif"],
-        body: ['"Inter"', "system-ui", "sans-serif"],
+        headline: ["var(--font-space-grotesk)", '"Space Grotesk"', "system-ui", "sans-serif"],
+        body: ["var(--font-inter)", '"Inter"', "system-ui", "sans-serif"],
+        mono: ["var(--font-jetbrains-mono)", '"JetBrains Mono"', "monospace"],
       },
       borderRadius: {
         card: "12px",
@@ -42,6 +43,6 @@ const config: Config = {
       },
     },
   },
-  plugins: [],
+  plugins: [require("tailwindcss-animate")],
 };
 export default config;

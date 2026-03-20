@@ -25,7 +25,7 @@ export default function PayrollSuccessPage() {
         <p className="text-sm text-secondary mt-2">{run.period_label} payroll has been processed via shielded transactions.</p>
       </div>
 
-      <div className="grid grid-cols-3 gap-4 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8">
         <div className="bg-white border border-card-border rounded-card p-5 text-center">
           <p className="text-xs text-secondary">Total Sent</p>
           <p className="text-xl font-headline font-bold mt-1">{run.total_zec} ZEC</p>

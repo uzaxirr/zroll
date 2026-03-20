@@ -9,13 +9,18 @@
     "lint": "next lint"
   },
   "dependencies": {
-    "@clerk/nextjs": "^7.0.5",
-    "clsx": "^2.1.1",
+"clsx": "^2.1.1",
+    "cmdk": "^1.0.0",
+    "cobe": "^0.6.1",
+    "framer-motion": "^11.0.0",
     "lucide-react": "^0.577.0",
     "next": "14.2.35",
     "qrcode.react": "^4.2.0",
     "react": "^18",
-    "react-dom": "^18"
+    "react-dom": "^18",
+    "recharts": "^2.15.0",
+    "sonner": "^1.7.0",
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@types/node": "^20",

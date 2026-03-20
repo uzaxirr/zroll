@@ -8,8 +8,9 @@ class Settings(BaseSettings):
     database_url_sync: str = "postgresql://postgres:postgres@localhost:5434/zroll"
 
     # Auth
-    clerk_secret_key: str = ""
-    clerk_webhook_secret: str = ""
+    jwt_secret: str = ""
+    access_token_expire_minutes: int = 15
+    refresh_token_expire_days: int = 7
 
     # Redis
     redis_url: str = "redis://localhost:6379/0"

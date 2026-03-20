@@ -18,7 +18,7 @@ export function FormInput({
   options,
 }: FormInputProps) {
   const baseClasses =
-    "w-full px-4 py-2.5 border rounded-btn text-sm focus:outline-none transition-colors";
+    "w-full px-4 py-2.5 border rounded-btn text-sm focus:outline-none focus:ring-2 focus:ring-green/20 transition-colors";
   const stateClasses = error
     ? "border-error focus:border-error"
     : "border-card-border focus:border-green";

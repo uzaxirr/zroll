@@ -1,12 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
-
-const wordVariants = {
-  hidden: { opacity: 0, y: 30 },
-  visible: { opacity: 1, y: 0 },
-};
-
 export function Hero() {
   return (
     <section className="relative flex flex-col items-center pt-[140px] pb-8 px-6 overflow-hidden">
@@ -46,60 +39,45 @@ export function Hero() {
       />
 
       {/* Headline */}
-      <motion.div
-        className="relative z-10 flex items-baseline justify-center gap-3 flex-wrap"
-        initial="hidden"
-        animate="visible"
-        transition={{ staggerChildren: 0.1 }}
-      >
-        <motion.span
-          variants={wordVariants}
-          transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-          className="font-headline font-bold text-white"
-          style={{ fontSize: 76, letterSpacing: "-0.03em", lineHeight: "84px" }}
+      <div className="relative z-10 flex items-baseline justify-center gap-3 flex-wrap">
+        <span
+          className="font-headline font-bold text-white text-4xl md:text-6xl lg:text-[76px] leading-tight lg:leading-[84px]"
+          style={{ letterSpacing: "-0.03em", animation: "fadeSlideUp 0.5s ease both" }}
         >
           Pay via
-        </motion.span>
-        <motion.span
-          variants={wordVariants}
-          transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-          className="font-headline font-bold"
-          style={{ fontSize: 76, letterSpacing: "-0.03em", lineHeight: "84px", color: "#F59E0B" }}
+        </span>
+        <span
+          className="font-headline font-bold text-4xl md:text-6xl lg:text-[76px] leading-tight lg:leading-[84px]"
+          style={{ letterSpacing: "-0.03em", color: "#F59E0B", animation: "fadeSlideUp 0.5s ease both 0.1s" }}
         >
           $ZEC
-        </motion.span>
-        <motion.span
-          variants={wordVariants}
-          transition={{ duration: 0.5, ease: [0.25, 0.1, 0.25, 1] }}
-          className="font-headline font-bold text-white"
-          style={{ fontSize: 76, letterSpacing: "-0.03em", lineHeight: "84px" }}
+        </span>
+        <span
+          className="font-headline font-bold text-white text-4xl md:text-6xl lg:text-[76px] leading-tight lg:leading-[84px]"
+          style={{ letterSpacing: "-0.03em", animation: "fadeSlideUp 0.5s ease both 0.2s" }}
         >
           to the World
-        </motion.span>
-      </motion.div>
+        </span>
+      </div>
 
       {/* Subtitle */}
-      <motion.p
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        transition={{ delay: 0.5, duration: 0.5 }}
+      <p
         className="relative z-10 text-center mt-8 max-w-[560px]"
         style={{
           fontSize: 17,
           lineHeight: "30px",
           color: "rgba(255,255,255,0.5)",
+          animation: "fadeIn 0.5s ease both 0.5s",
         }}
       >
         Zwage makes global payroll easy for teams and freelancers,
         offering flexible payments in ZEC and stablecoins.
-      </motion.p>
+      </p>
 
       {/* CTA Buttons */}
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.7, duration: 0.5 }}
+      <div
         className="relative z-10 flex items-center gap-4 mt-10"
+        style={{ animation: "fadeSlideUp 0.5s ease both 0.7s" }}
       >
         <a
           href="/sign-up"
@@ -125,7 +103,7 @@ export function Hero() {
         >
           How it works
         </a>
-      </motion.div>
+      </div>
     </section>
   );
 }

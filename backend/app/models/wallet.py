@@ -28,8 +28,8 @@ class OrgWallet(Base):
     zcash_wallet_id: Mapped[str] = mapped_column(String(255))  # Rust service wallet ID
     address: Mapped[str] = mapped_column(String(500))  # encrypted unified address
     spending_key: Mapped[str] = mapped_column(String(500), nullable=True)  # deprecated: keys managed by Rust service
-    viewing_key_full: Mapped[str] = mapped_column(String(1024))
-    viewing_key_incoming: Mapped[str] = mapped_column(String(500))
+    viewing_key_full: Mapped[str] = mapped_column(String(2048))
+    viewing_key_incoming: Mapped[str] = mapped_column(String(2048))
     pool: Mapped[WalletPool] = mapped_column(Enum(WalletPool), default=WalletPool.orchard)
     balance_zec: Mapped[Decimal] = mapped_column(Numeric(18, 8), default=Decimal("0"))
     last_synced_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True), nullable=True)

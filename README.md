@@ -127,7 +127,74 @@ curl -X POST http://localhost:8080/view/transactions \
 
 Returns balance and all transactions with decoded pay stub memos, read directly from chain.
 
-## Environment
+## Railway Deployment
+
+The app is deployed on Railway with the following services:
+
+| Service | Description | URL |
+|---------|-------------|-----|
+| Backend | FastAPI + Alembic migrations | https://backend-production-47c7.up.railway.app |
+| Frontend | Next.js 14 (standalone) | https://frontend-production-7963.up.railway.app |
+| Worker | Celery worker (background jobs) | Internal |
+| Beat | Celery beat (scheduled tasks) | Internal |
+| Postgres | PostgreSQL database | Managed by Railway |
+| Redis | Redis cache + message broker | Managed by Railway |
+
+### Deploying
+
+Deploy individual services using Railway CLI:
+
+```bash
+# Backend (also deploys for worker/beat since same codebase)
+cd zroll
+railway service backend
+railway up backend/ --path-as-root --detach
+
+# Frontend
+railway service frontend
+railway up frontend/ --path-as-root --detach
+
+# Worker
+railway service worker
+railway up backend/ --path-as-root --detach
+
+# Beat
+railway service beat
+railway up backend/ --path-as-root --detach
+```
+
+The `--path-as-root` flag is required so the Dockerfile is found at the archive root.
+
+### Environment Variables
+
+Each service needs its own environment variables configured in the Railway dashboard. Key variables:
+
+- **Backend/Worker/Beat**: `DATABASE_URL`, `REDIS_URL`, `CLERK_SECRET_KEY`, `WALLET_ENCRYPTION_KEY`, `ZCASH_SERVICE_URL`
+- **Frontend**: `NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY`, `NEXT_PUBLIC_API_URL`, `CLERK_SECRET_KEY`
+
+### Deployment Gotchas
+
+1. **`--path-as-root` is mandatory.** Without it, `railway up backend/` archives files with `backend/` as a prefix, so Railway can't find the Dockerfile at the root. Always pass `--path-as-root`.
+
+2. **`RAILWAY_DOCKERFILE_PATH` cannot be deleted via CLI.** If you set this env var and need to remove it, delete it from the Railway dashboard. Setting it to an empty string or a non-existent file will break builds.
+
+3. **Frontend: `npm ci` vs `npm install`.** The Dockerfile uses `npm install --legacy-peer-deps` because `@clerk/nextjs` v7 has peer dep conflicts with Next.js 14. `npm ci` will fail with ERESOLVE errors.
+
+4. **Clerk + static prerendering.** Pages using `useAuth()` or other Clerk hooks fail during `next build` static generation because `ClerkProvider` isn't available at build time. Add `export const dynamic = "force-dynamic"` to any layout or page that uses Clerk auth.
+
+5. **Worker and Beat share the backend Dockerfile.** Both services deploy the same `backend/` codebase. The start command is overridden via `RAILWAY_START_COMMAND` env var in Railway (e.g., `celery -A app.workers.celery_app worker` for worker, `celery -A app.workers.celery_app beat` for beat).
+
+6. **`NEXT_PUBLIC_*` env vars need `ARG` in Dockerfile.** Railway injects env vars as Docker build args, but you must declare `ARG NEXT_PUBLIC_*` before `ENV NEXT_PUBLIC_*=$NEXT_PUBLIC_*` in the Dockerfile. Without the `ARG` declaration, the variable resolves to empty string and Clerk/API calls fail at runtime with 500 errors.
+
+7. **Alembic migrations run on backend startup.** The backend Dockerfile CMD runs `alembic upgrade head` before starting uvicorn. If the migration fails, the container won't start. Check logs if the backend service is crash-looping.
+
+8. **`.dockerignore` matters.** Without it, `node_modules` (frontend) and `.venv` (backend) get uploaded, bloating the build context and potentially causing 500 errors on upload.
+
+9. **Clerk v7 requires Next.js 15+.** `@clerk/nextjs` v7 has a peer dep on `next: ^15.2.8`. It installs with `--legacy-peer-deps` but breaks at runtime (`useAuth` outside `ClerkProvider`). Use `@clerk/nextjs@^6.39.0` with Next.js 14.
+
+10. **Clerk middleware must use `clerkMiddleware()`.** The middleware file (`src/middleware.ts`) must use `clerkMiddleware()` from `@clerk/nextjs/server`, not a plain Next.js middleware. Without it, `auth()` calls fail at runtime with "can't detect usage of clerkMiddleware()".
+
+## Environment (Local)
 
 All configuration is in `.env` at the repo root. See `.env` for available variables.
 

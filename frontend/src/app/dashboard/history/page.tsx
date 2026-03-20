@@ -342,8 +342,8 @@ export default function HistoryPage() {
       {data && (
         <>
           {/* Balance + Stats */}
-          <div className="grid grid-cols-3 gap-4">
-            <div className="bg-white border border-card-border rounded-card p-5 col-span-2">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+            <div className="bg-white border border-card-border rounded-card p-5 lg:col-span-2">
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-xs text-secondary">Wallet Balance (from chain)</p>

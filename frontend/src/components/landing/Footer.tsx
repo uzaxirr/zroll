@@ -21,12 +21,12 @@ const columns = [
 export function Footer() {
   return (
     <footer
-      className="w-full px-24 pt-14 pb-12"
+      className="w-full px-6 md:px-24 pt-14 pb-12"
       style={{ borderTop: "1px solid rgba(255,255,255,0.06)" }}
     >
-      <div className="max-w-[1240px] mx-auto flex justify-between">
+      <div className="max-w-[1240px] mx-auto flex flex-col md:flex-row justify-between gap-10 md:gap-0">
         {/* Left: Logo + tagline */}
-        <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-4 items-center md:items-start text-center md:text-left">
           <div className="flex items-center gap-2.5">
             <WalletLogo size={26} />
             <span
@@ -46,7 +46,7 @@ export function Footer() {
         </div>
 
         {/* Right: Link columns */}
-        <div className="flex gap-20">
+        <div className="flex flex-wrap justify-center md:justify-start gap-10 md:gap-20">
           {columns.map((col) => (
             <div key={col.title} className="flex flex-col gap-4">
               <span

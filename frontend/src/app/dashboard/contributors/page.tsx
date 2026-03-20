@@ -1,13 +1,15 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { toast } from "sonner";
 import { PageHeader } from "@/components/page-header";
 import { Badge } from "@/components/badge";
 import { Modal } from "@/components/modal";
 import { FormInput } from "@/components/form-input";
+import { EmptyState } from "@/components/empty-state";
 import { useApi, useApiPost, useApiPut, useApiDelete, useAuthenticatedDownload } from "@/lib/use-api";
 import type { ContributorsResponse, Contributor } from "@/lib/api";
-import { Pencil, Send, Upload, Download, AlertCircle, CheckCircle2, Trash2, Loader2 } from "lucide-react";
+import { Pencil, Send, Upload, Download, AlertCircle, CheckCircle2, Trash2, Loader2, Users } from "lucide-react";
 
 interface CsvRow {
   full_name: string;
@@ -135,8 +137,10 @@ export default function ContributorsPage() {
       await Promise.all(Array.from(selected).map((id) => del(`/api/contributors/${id}`)));
       setSelected(new Set());
       refetch();
+      toast.success(`${selected.size} contributors deleted`);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : "Some contributors could not be deleted.");
+      toast.error(err instanceof Error ? err.message : "Some contributors could not be deleted.");
       refetch();
     } finally {
       setBulkDeleting(false);
@@ -151,8 +155,10 @@ export default function ContributorsPage() {
       await del(`/api/contributors/${contributorId}`);
       setSelected((prev) => { const next = new Set(prev); next.delete(contributorId); return next; });
       refetch();
+      toast.success(`${name} deleted`);
     } catch (err) {
       setActionError(err instanceof Error ? err.message : `Failed to delete ${name}.`);
+      toast.error(err instanceof Error ? err.message : `Failed to delete ${name}.`);
     } finally {
       setDeletingId(null);
     }
@@ -197,12 +203,14 @@ export default function ContributorsPage() {
       });
       setBulkResult(result);
       refetch();
+      toast.success(`${result.created_count} contributors imported`);
     } catch (err) {
       setBulkResult({
         created_count: 0, skipped_count: 0, error_count: 1,
         created: [], skipped: [],
         errors: [{ email: "", reason: err instanceof Error ? err.message : "Import failed" }],
       });
+      toast.error(err instanceof Error ? err.message : "Import failed.");
     }
   };
 
@@ -288,8 +296,10 @@ export default function ContributorsPage() {
       await post("/api/contributors", body);
       setShowAddModal(false);
       refetch();
+      toast.success("Contributor added");
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to add contributor.");
+      toast.error(err instanceof Error ? err.message : "Failed to add contributor.");
     }
   };
 
@@ -316,8 +326,10 @@ export default function ContributorsPage() {
       await put(`/api/contributors/${editingContributor.id}`, body);
       setEditingContributor(null);
       refetch();
+      toast.success("Contributor updated");
     } catch (err) {
       setFormError(err instanceof Error ? err.message : "Failed to update contributor.");
+      toast.error(err instanceof Error ? err.message : "Failed to update contributor.");
     }
   };
 
@@ -422,6 +434,7 @@ export default function ContributorsPage() {
         </div>
       )}
 
+      <div className="overflow-x-auto">
       <div className="bg-white border border-card-border rounded-card overflow-hidden">
         <table className="w-full">
           <thead>
@@ -517,6 +530,16 @@ export default function ContributorsPage() {
           </tbody>
         </table>
       </div>
+      </div>
+
+      {contributors.length === 0 && (
+        <EmptyState
+          icon={Users}
+          title="No contributors found"
+          description="Add your first contributor or import from CSV to get started."
+          action={{ label: "Add Contributor", onClick: openAddModal }}
+        />
+      )}
 
       {/* Add Contributor Modal */}
       <Modal open={showAddModal} onClose={() => setShowAddModal(false)} title="Add Contributor">

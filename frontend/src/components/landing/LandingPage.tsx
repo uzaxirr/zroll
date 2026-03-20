@@ -8,6 +8,7 @@ import { AutopilotPayroll } from "./AutopilotPayroll";
 import { HowItWorks } from "./HowItWorks";
 import { SignWithZodl } from "./SignWithZodl";
 import { TrustStrip } from "./TrustStrip";
+import { MoreThanPayments } from "./MoreThanPayments";
 import { FinalCTA } from "./FinalCTA";
 import { Footer } from "./Footer";
 
@@ -26,6 +27,7 @@ export function LandingPage() {
       <HowItWorks />
       <SignWithZodl />
       <TrustStrip />
+      <MoreThanPayments />
       <FinalCTA />
       <Footer />
     </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -11,6 +12,8 @@ import {
   DollarSign,
   Monitor,
   Lock,
+  Menu,
+  X,
 } from "lucide-react";
 import { WalletLogo } from "@/components/WalletLogo";
 import { useApi } from "@/lib/use-api";
@@ -46,9 +49,14 @@ export function Sidebar({ variant }: SidebarProps) {
     { skip: variant !== "admin" }
   );
   const hasPendingPayroll = stats && stats.pending_approval_count > 0;
+  const [mobileOpen, setMobileOpen] = useState(false);
 
-  return (
-    <aside className="fixed left-0 top-0 h-screen w-[220px] bg-sidebar-dark flex flex-col z-50">
+  useEffect(() => {
+    setMobileOpen(false);
+  }, [pathname]);
+
+  const navContent = (
+    <>
       <div className="flex items-center gap-2.5 px-5 py-6">
         <WalletLogo size={32} />
         <span
@@ -99,6 +107,44 @@ export function Sidebar({ variant }: SidebarProps) {
           <p className="text-xs text-white/60 mt-0.5">{org?.country || ""}</p>
         </div>
       </div>
-    </aside>
+    </>
+  );
+
+  return (
+    <>
+      {/* Mobile hamburger button */}
+      <button
+        onClick={() => setMobileOpen(true)}
+        className="fixed top-4 left-4 z-50 lg:hidden w-10 h-10 flex items-center justify-center rounded-lg bg-sidebar-dark text-white"
+      >
+        <Menu className="w-5 h-5" />
+      </button>
+
+      {/* Mobile overlay */}
+      {mobileOpen && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 lg:hidden"
+          onClick={() => setMobileOpen(false)}
+        >
+          <aside
+            className="fixed left-0 top-0 h-screen w-[220px] bg-sidebar-dark flex flex-col"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => setMobileOpen(false)}
+              className="absolute top-5 right-3 text-muted hover:text-white transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+            {navContent}
+          </aside>
+        </div>
+      )}
+
+      {/* Desktop sidebar */}
+      <aside className="hidden lg:flex fixed left-0 top-0 h-screen w-[220px] bg-sidebar-dark flex-col z-50">
+        {navContent}
+      </aside>
+    </>
   );
 }
